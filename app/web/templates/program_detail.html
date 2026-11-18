@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}{{ program.name }} - STOscanner{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/web/dashboard">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/web/programs">Programs</a></li>
+            <li class="breadcrumb-item active">{{ program.name }}</li>
+        </ol>
+    </nav>
+
+    <!-- Program Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h1 class="h3 mb-1">{{ program.name }}</h1>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-secondary">{{ program.platform }}</span>
+                        {% if program.is_active %}
+                        <span class="badge bg-success">Active</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                        {% if program.url %}
+                        <a href="{{ program.url }}" target="_blank" class="text-decoration-none">
+                            <i class="bi bi-link-45deg"></i> Program URL
+                        </a>
+                        {% endif %}
+                    </div>
+                    <p class="text-muted mb-0">
+                        {% if program.created_at %}Added {{ program.created_at[:10] }}{% endif %}
+                        {% if program.last_scan_at %}
+                        • Last scanned {{ program.last_scan_at[:16]|replace('T', ' ') }}
+                        {% else %}
+                        • Never scanned
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column: Statistics -->
+        <div class="col-lg-4 mb-4">
+            <!-- Statistics Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    Statistics
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-6">Total Scopes</dt>
+                        <dd class="col-6 text-end">{{ scopes|length }}</dd>
+                        
+                        <dt class="col-6">Total Subdomains</dt>
+                        <dd class="col-6 text-end">{{ total_subdomains }}</dd>
+                        
+                        <dt class="col-6">High Confidence</dt>
+                        <dd class="col-6 text-end">
+                            {% set high_conf = namespace(count=0) %}
+                            {% for state, count in subdomain_counts.items() %}
+                                {% if state in ['dangling', 'claimed'] %}
+                                    {% set high_conf.count = high_conf.count + count %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ high_conf.count }}
+                        </dd>
+                        
+                        <dt class="col-6">Last Scan</dt>
+                        <dd class="col-6 text-end">
+                            {% if program.last_scan_at %}
+                            {{ program.last_scan_at[:16]|replace('T', ' ') }}
+                            {% else %}
+                            <span class="text-muted">Never</span>
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- State Distribution -->
+            <div class="card">
+                <div class="card-header">
+                    Subdomain States
+                </div>
+                <div class="card-body">
+                    {% if subdomain_counts %}
+                    <div class="list-group list-group-flush">
+                        {% for state, count in subdomain_counts.items() %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>
+                                <span class="badge state-badge state-{{ state }} me-2">{{ state }}</span>
+                            </span>
+                            <span class="badge bg-light text-dark">{{ count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <div class="text-muted">No subdomains yet</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Scopes and Recent Findings -->
+        <div class="col-lg-8 mb-4">
+            <!-- Scopes Card -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Scopes ({{ scopes|length }})</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if scopes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Domain</th>
+                                    <th>Subdomains</th>
+                                    <th>Added</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for scope in scopes %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ scope.domain }}</strong>
+                                    </td>
+                                    <td>{{ scope.subdomain_count }}</td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {% if scope.added_at %}{{ scope.added_at[:10] }}{% else %}—{% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if scope.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <div class="text-muted">No scopes configured</div>
+                        <small>Add scopes using the CLI: <code>stoscanner update-scope {{ program.id }} "domain.com"</code></small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Findings Card -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Recent Findings (High Confidence)</span>
+                    {% if recent_findings %}
+                    <a href="/web/findings?program_id={{ program.id }}" class="btn btn-sm btn-outline-primary">View All</a>
+                    {% endif %}
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_findings %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Subdomain</th>
+                                    <th>Confidence</th>
+                                    <th>State</th>
+                                    <th>Provider</th>
+                                    <th>Last Scanned</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for finding in recent_findings %}
+                                <tr>
+                                    <td>
+                                        <a href="/web/subdomain/{{ finding.id }}" class="text-decoration-none">
+                                            <strong>{{ finding.name }}</strong>
+                                        </a>
+                                        <br>
+                                        <small class="text-muted">{{ finding.scope_domain }}</small>
+                                    </td>
+                                    <td>
+                                        {% if finding.confidence >= 90 %}
+                                        <span class="badge badge-confidence badge-confidence-90">{{ finding.confidence }}%</span>
+                                        {% elif finding.confidence >= 80 %}
+                                        <span class="badge badge-confidence badge-confidence-80">{{ finding.confidence }}%</span>
+                                        {% elif finding.confidence >= 70 %}
+                                        <span class="badge badge-confidence badge-confidence-70">{{ finding.confidence }}%</span>
+                                        {% else %}
+                                        <span class="badge badge-confidence badge-confidence-60">{{ finding.confidence }}%</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge state-badge state-{{ finding.state }}">{{ finding.state }}</span>
+                                    </td>
+                                    <td>
+                                        {% if finding.takeover_provider %}
+                                        <span class="provider-badge">{{ finding.takeover_provider }}</span>
+                                        {% else %}
+                                        <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {% if finding.last_scanned_at %}
+                                            {{ finding.last_scanned_at[:16]|replace('T', ' ') }}
+                                            {% else %}
+                                            Never
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <div class="text-muted">No high-confidence findings yet</div>
+                        <small>Scanning will automatically detect takeover opportunities</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

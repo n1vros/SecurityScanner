@@ -1,0 +1,7 @@
+3. GitHub monitoring — companies push DNS zone files, terraform configs, decommission scripts. Watch org repos for CNAME additions/removals via GitHub API. Good signal but needs per-program org mapping
+4. CORS misconfiguration detection. Reflect the Origin: header with a crafted domain in the HTTP prober and check for Access-Control-Allow-Origin: <attacker> + Access-Control-Allow-Credentials: true. High payout finding, low noise.
+
+https://hackenproof.com/programs?page=2
+Zerocopter
+https://yogosha.com/bug-bounty/
+https://www.synack.com/

@@ -1,0 +1,73 @@
+# Build context for the STOscanner image.
+#
+# Only application code, requirements and runtime data files are needed: the
+# recon tools are compiled by the Dockerfile itself, so install-tools.sh (which
+# targets a host install) and all local/dev artifacts stay out of the image.
+
+# Version control and local tooling
+.git/
+.gitignore
+.agents/
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Python virtualenv and caches
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Tests and planning docs are not needed at runtime
+tests/
+test/
+PLAN.md
+AGENTS.md
+SPEC.md
+TODO.txt
+README.md
+pyproject.toml
+requirements-dev.txt
+.github/
+vault/
+
+# Runtime output and generated state
+findings/
+*.db
+*.sqlite
+*.sqlite3
+files/resolvers_cache.txt
+files/resolvers_cache.txt.tmp
+logs/
+*.log
+*.tmp
+
+# Secrets and local configuration
+.env
+.env.*
+gcp.json
+*.pem
+*.key
+
+# Container definitions are not application content
+Dockerfile
+.dockerignore
+docker-compose.yml
+install-tools.sh
+
+# Host-specific noise
+.DS_Store
+Thumbs.db

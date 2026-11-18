@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}STOscanner{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+        }
+        .card {
+            box-shadow: 0 2px 4px rgba(0,0,0,.05);
+            border: none;
+            margin-bottom: 1.5rem;
+        }
+        .card-header {
+            background-color: #fff;
+            border-bottom: 1px solid rgba(0,0,0,.125);
+            font-weight: 600;
+        }
+        .badge-confidence {
+            font-size: 0.8em;
+            padding: 0.25em 0.5em;
+        }
+        .badge-confidence-90 { background-color: #dc3545; }
+        .badge-confidence-80 { background-color: #fd7e14; }
+        .badge-confidence-70 { background-color: #ffc107; }
+        .badge-confidence-60 { background-color: #28a745; }
+        .badge-confidence-50 { background-color: #20c997; }
+        .state-badge {
+            font-size: 0.75em;
+            padding: 0.2em 0.4em;
+        }
+        .state-discovered { background-color: #6c757d; color: white; }
+        .state-alive { background-color: #28a745; color: white; }
+        .state-dead { background-color: #343a40; color: white; }
+        .state-dangling { background-color: #dc3545; color: white; }
+        .state-claimed { background-color: #6610f2; color: white; }
+        .state-false_positive { background-color: #6f42c1; color: white; }
+        .monospace {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.875em;
+        }
+        .table-hover tbody tr:hover {
+            background-color: rgba(0,0,0,.025);
+        }
+        .stat-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .provider-badge {
+            font-size: 0.75em;
+            padding: 0.2em 0.5em;
+            background-color: #e9ecef;
+            color: #495057;
+            border-radius: 3px;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/web/dashboard">
+                <i class="bi bi-shield-shaded me-2"></i>
+                STOscanner
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/web/dashboard">
+                            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/web/findings">
+                            <i class="bi bi-bug me-1"></i>Findings
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/web/programs">
+                            <i class="bi bi-list-task me-1"></i>Programs
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/web/subdomains">
+                            <i class="bi bi-globe me-1"></i>Subdomains
+                        </a>
+                    </li>
+                </ul>
+                <div class="navbar-text">
+                    <small class="text-muted">v0.1.0</small>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer class="mt-5 py-3 border-top">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-6">
+                    <small class="text-muted">
+                        STOscanner &copy; {{ current_year }} - Subdomain Takeover Scanner
+                    </small>
+                </div>
+                <div class="col-md-6 text-end">
+                    <small class="text-muted">
+                        Data refreshed: <span id="last-refresh">{{ current_time }}</span>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            const now = new Date();
+            const timeStr = now.toUTCString().split(' ')[4];
+            document.getElementById('last-refresh').textContent = timeStr;
+        }, 30000);
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}{{ subdomain.name }} - STOscanner{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/web/dashboard">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/web/subdomains">Subdomains</a></li>
+            <li class="breadcrumb-item active">{{ subdomain.name }}</li>
+        </ol>
+    </nav>
+
+    <!-- Subdomain Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-1 monospace">{{ subdomain.name }}</h1>
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="badge state-badge state-{{ subdomain.state }}">{{ subdomain.state }}</span>
+                <span class="badge badge-confidence badge-confidence-{{ (subdomain.confidence // 10) * 10 }}">
+                    {{ subdomain.confidence }}% confidence
+                </span>
+                {% if subdomain.takeover_provider %}
+                <span class="provider-badge">{{ subdomain.takeover_provider }}</span>
+                {% endif %}
+            </div>
+            <p class="text-muted mb-0">
+                {% if subdomain.program_name %}{{ subdomain.program_name }}{% endif %}
+                {% if subdomain.scope_domain %} &bull; {{ subdomain.scope_domain }}{% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column: Scan State -->
+        <div class="col-lg-7 mb-4">
+            <div class="card mb-4">
+                <div class="card-header">Discovery &amp; Scan</div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Discovered</dt>
+                        <dd class="col-sm-8">
+                            {% if subdomain.discovered_at %}
+                            {{ subdomain.discovered_at[:16]|replace('T', ' ') }}
+                            {% else %}
+                            <span class="text-muted">Unknown</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-4">Last Scanned</dt>
+                        <dd class="col-sm-8">
+                            {% if subdomain.last_scanned_at %}
+                            {{ subdomain.last_scanned_at[:16]|replace('T', ' ') }}
+                            {% else %}
+                            <span class="text-muted">Never</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-4">Last State Change</dt>
+                        <dd class="col-sm-8">
+                            {% if subdomain.last_state_change_at %}
+                            {{ subdomain.last_state_change_at[:16]|replace('T', ' ') }}
+                            {% else %}
+                            <span class="text-muted">Unknown</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-4">CNAME Target</dt>
+                        <dd class="col-sm-8 monospace">
+                            {% if subdomain.cname_target %}
+                            {{ subdomain.cname_target }}
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-4">DNS Resolver</dt>
+                        <dd class="col-sm-8">
+                            {% if subdomain.dns_resolver %}
+                            <span class="monospace">{{ subdomain.dns_resolver }}</span>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                            {% if subdomain.dns_resolved_at %}
+                            <br><small class="text-muted">resolved {{ subdomain.dns_resolved_at[:16]|replace('T', ' ') }}</small>
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Takeover Evidence</div>
+                <div class="card-body">
+                    {% if subdomain.takeover_evidence %}
+                    <pre class="monospace mb-0 text-wrap">{{ subdomain.takeover_evidence }}</pre>
+                    {% else %}
+                    <span class="text-muted">No takeover evidence recorded.</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: HTTP Response -->
+        <div class="col-lg-5 mb-4">
+            <div class="card">
+                <div class="card-header">HTTP Probe</div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Status</dt>
+                        <dd class="col-sm-7">
+                            {% if subdomain.http_status %}
+                            <span class="badge {% if subdomain.http_status == 200 %}bg-success{% elif subdomain.http_status >= 400 %}bg-danger{% else %}bg-warning{% endif %}">
+                                {{ subdomain.http_status }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-5">Title</dt>
+                        <dd class="col-sm-7">
+                            {% if subdomain.http_title %}
+                            {{ subdomain.http_title }}
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-5">Content Length</dt>
+                        <dd class="col-sm-7">
+                            {% if subdomain.http_content_length is not none %}
+                            {{ subdomain.http_content_length }}
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-5">Body Hash</dt>
+                        <dd class="col-sm-7 monospace">
+                            {% if subdomain.http_body_hash %}
+                            {{ subdomain.http_body_hash }}
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-5">Probed</dt>
+                        <dd class="col-sm-7">
+                            {% if subdomain.http_probed_at %}
+                            {{ subdomain.http_probed_at[:16]|replace('T', ' ') }}
+                            {% else %}
+                            <span class="text-muted">Never</span>
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

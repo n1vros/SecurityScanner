@@ -1,0 +1,263 @@
+# =============================================================================
+# DNS Takeover — Vulnerable NS Provider Signatures
+# app/probing/dns_scanner.py  ·  loaded via DNS_TAKEOVER_PROVIDERS_PATH
+#
+# Each entry:
+#   name             — display name used in findings / alerts
+#   pattern          — Python regex matched against NS hostnames (fullmatch, IGNORECASE)
+#   notes            — how-to-claim instructions shown in findings
+#   fp_risk          — true = known false-positive risk, verify manually before reporting
+#   custom_detection — true = skip SERVFAIL/NXDOMAIN rcode check; use provider-specific
+#                      logic instead (currently: AWS NS-set mismatch detection)
+#
+# Add new providers here — no code changes needed.
+# Restart the process after editing for changes to take effect.
+# =============================================================================
+
+providers:
+
+  # ---------------------------------------------------------------------------
+  # AWS Route 53
+  # ---------------------------------------------------------------------------
+
+  - name: "AWS Route 53 (unclaimed zone)"
+    pattern: "ns-\\d+\\.awsdns-\\d+\\.(com|net|org|co\\.uk)$"
+    notes: >
+      Unclaimed Route 53 zone — NS records delegated in parent but no hosted zone
+      exists for this domain at Route 53 yet.
+      AWS dangling-DNS doc scenario 2: zone deleted, NS removed then re-added without
+      recreating the hosted zone (AWS's reassignment hold is released when the delegation
+      records are removed).
+      Scenario 3: reusable delegation set NS pointed at in parent before the hosted zone
+      was created.
+      To claim: create a Route 53 hosted zone using a reusable delegation set that matches
+      the NS already in the parent, or create any hosted zone and update the registrar
+      delegation to match the assigned NS.
+    fp_risk: true
+    custom_detection: false
+
+  - name: "AWS Route 53 (NS mismatch)"
+    pattern: "ns-\\d+\\.awsdns-\\d+\\.(com|net|org|co\\.uk)$"
+    notes: >
+      NS set mismatch — zone claimed by wrong AWS account.
+      The registrar delegation NS set differs from what Route 53 serves authoritatively,
+      meaning an attacker registered the zone in their own account and got a new NS
+      assignment.
+      Confirmed real-world: fireblocks.io (Bugcrowd PoC, Mar 2026).
+      To claim: create a Route 53 hosted zone for the domain — AWS will assign you a new
+      NS set. If registrar still points to the old NS set, your zone will receive all DNS
+      queries for the domain.
+    fp_risk: true
+    custom_detection: true
+
+  # ---------------------------------------------------------------------------
+  # Straightforwardly Vulnerable
+  # ---------------------------------------------------------------------------
+
+  - name: "Hurricane Electric"
+    pattern: "ns[1-5]\\.he\\.net$"
+    notes: >
+      Vulnerable per can-i-take-over-dns #25. NS: ns1-ns5.he.net.
+      Free account at dns.he.net -> Add a new domain.
+      No ownership verification — any account can add any domain.
+    fp_risk: false
+    custom_detection: false
+
+  - name: "Linode"
+    pattern: "ns[12]\\.linode\\.com$"
+    notes: >
+      Vulnerable per can-i-take-over-dns #23. NS: ns1-ns2.linode.com.
+      Akamai Cloud (formerly Linode) DNS Manager -> Add a domain zone.
+      No ownership verification required.
+    fp_risk: false
+    custom_detection: false
+
+  - name: "Vultr"
+    pattern: "ns[123]\\.vultr\\.com$"
+    notes: >
+      Vulnerable per can-i-take-over-dns #58. NS: ns1-ns3.vultr.com.
+      Vultr DNS -> Add domain. No ownership verification.
+    fp_risk: false
+    custom_detection: false
+
+  - name: "DigitalOcean"
+    pattern: "ns[123]\\.digitalocean\\.com$"
+    notes: >
+      Vulnerable per can-i-take-over-dns #8. NS: ns1-ns3.digitalocean.com.
+      DigitalOcean Networking -> Domains -> Add domain.
+      No ownership verification — any account can add any domain.
+    fp_risk: false
+    custom_detection: false
+
+  - name: "NS1"
+    pattern: "dns[1-4]\\.p\\d+\\.nsone\\.net$"
+    notes: >
+      Vulnerable per can-i-take-over-dns #42. NS shard number does NOT need to match —
+      any NS1 account zone is served by all shards.
+      NS1 portal -> Add a zone. No ownership verification.
+    fp_risk: false
+    custom_detection: false
+
+  - name: "DNSMadeEasy"
+    pattern: "ns\\d+\\.dnsmadeeasy\\.com$"
+    notes: >
+      Vulnerable per can-i-take-over-dns #6. NS: ns**.dnsmadeeasy.com.
+      Now owned by DigiCert. Actively exploited in the wild per Infoblox Sitting Ducks
+      research (2024) — e.g. mcpennsylvania.com hijacked repeatedly via this provider.
+      For ns1-ns4: create a zone via Managed DNS (free 30-day trial).
+      For ns5-ns7: use Secondary DNS + a primary that pushes records.
+      ns10-ns15 are load-spill servers — no known reliable claim path.
+    fp_risk: false
+    custom_detection: false
+
+  - name: "TierraNet / DomainDiscover"
+    pattern: "ns[12]\\.domaindiscover\\.com$"
+    notes: >
+      Vulnerable per can-i-take-over-dns #24. NS: ns1-ns2.domaindiscover.com.
+      TierraNet operates DomainDiscover. Create a free account and add the domain as a
+      new zone — no ownership verification required.
+    fp_risk: false
+    custom_detection: false
+
+  - name: "Hetzner DNS"
+    pattern: "(hydrogen|helium|oxygen)\\.ns\\.hetzner\\.com$|ns[123]\\.second-ns\\.(com|de|net)$"
+    notes: >
+      Hetzner offers free DNS hosting at dns.hetzner.com.
+      No domain ownership verification is enforced — any account can add any domain as a
+      zone. Create a free Hetzner account and add the domain via their DNS console or API.
+      Nameservers: hydrogen.ns.hetzner.com, helium.ns.hetzner.com, oxygen.ns.hetzner.com.
+      Also: ns1/ns2/ns3.second-ns.{com,de,net} (Hetzner legacy NS set).
+    fp_risk: false
+    custom_detection: false
+
+  # ---------------------------------------------------------------------------
+  # Edge Cases / False-Positive Risk
+  # ---------------------------------------------------------------------------
+
+  - name: "Google Cloud DNS"
+    pattern: "ns-cloud-[a-z][1-4]\\.googledomains\\.com$"
+    notes: >
+      Needs Testing per can-i-take-over-dns #27 (status as of mid-2024).
+      Google may have added domain verification — confirm before reporting.
+      GCP Console -> Network Services -> Cloud DNS -> Create zone.
+    fp_risk: true
+    custom_detection: false
+
+  - name: "EasyDNS"
+    pattern: "dns[1-4]\\.easydns\\.(com|net|org|info)$"
+    notes: >
+      Vulnerable per can-i-take-over-dns #9. NS: dns1-dns4.easydns.*.
+      EasyDNS account -> Add domain.
+      SERVFAIL can be false positive if zone exists but billing lapsed.
+    fp_risk: true
+    custom_detection: false
+
+  - name: "DNSimple"
+    pattern: "ns[1-4]\\.dnsimple\\.com$"
+    notes: >
+      Vulnerable per can-i-take-over-dns #22. NS: ns1-ns4.dnsimple.com.
+      DNSimple account -> Add domain.
+      False positive risk: expired payment -> SERVFAIL but zone still exists and cannot
+      be re-claimed by another account.
+    fp_risk: true
+    custom_detection: false
+
+  - name: "Squarespace"
+    pattern: "(ext-)?dns[1-4]\\.squarespace\\.com$"
+    notes: >
+      Edge Case. Squarespace was implicated in the 2024 Sitting Ducks research (Infoblox)
+      and the Google Domains -> Squarespace migration DNS hijacking incident (June 2024,
+      affected Web3 firms). Domains acquired via the Google migration that were not fully
+      claimed were exploitable.
+      NS formats: dns1-dns4.squarespace.com (legacy) and
+      ext-dns1-ext-dns4.squarespace.com (Google migration).
+      Ongoing risk depends on Squarespace's current zone-ownership verification.
+    fp_risk: true
+    custom_detection: false
+
+  - name: "Dreamhost"
+    pattern: "ns[1-3]\\.dreamhost\\.com$"
+    notes: >
+      Edge Case per can-i-take-over-dns #40. NS: ns1-ns3.dreamhost.com.
+      Attempt to add domain via Dreamhost panel. Ownership checks are inconsistently
+      enforced — some domains can be added without verification.
+    fp_risk: true
+    custom_detection: false
+
+  - name: "Rackspace Cloud DNS"
+    pattern: "ns\\.rackspace\\.com$"
+    notes: >
+      Rackspace Cloud DNS may allow zones to be created without strict domain ownership
+      verification. If a domain is delegated to ns.rackspace.com but no zone exists in
+      Rackspace DNS, an attacker may be able to claim it by creating the zone in their
+      account.
+    fp_risk: true
+    custom_detection: false
+
+  - name: "Constellix"
+    pattern: "ns[1-4]\\.constellix\\.com$"
+    notes: >
+      Constellix DNS may allow zones to be created without strict ownership verification
+      depending on account configuration.
+      Potential takeover if domain is delegated but zone not claimed.
+    fp_risk: true
+    custom_detection: false
+
+  - name: "Reg.ru"
+    pattern: "ns[12]\\.reg\\.ru$"
+    notes: >
+      Vulnerable per can-i-take-over-dns #28. NS: ns1.reg.ru / ns2.reg.ru.
+      Russian provider — payment/account creation may be blocked depending on jurisdiction
+      due to sanctions. Register an account and add the domain as a zone; no ownership
+      verification required.
+    fp_risk: true
+    custom_detection: false
+
+  - name: "Yahoo Small Business (Turbify)"
+    pattern: "yns[12]\\.yahoo\\.com$"
+    notes: >
+      Vulnerable w/ purchase per can-i-take-over-dns #20.
+      NS: yns1.yahoo.com / yns2.yahoo.com.
+      Requires purchasing a Yahoo Small Business / Turbify hosting plan.
+      Account can then add the domain zone.
+    fp_risk: true
+    custom_detection: false
+
+  - name: "Microsoft Azure DNS"
+    pattern: "ns[1-4]-\\d+\\.azure-dns\\.(com|net|org|info)$"
+    notes: >
+      Vulnerable per can-i-take-over-dns #43. NS: ns1-##.azure-dns.*.
+      Azure DNS -> Create DNS zone.
+      Microsoft has made this increasingly difficult — re-verify before reporting.
+    fp_risk: true
+    custom_detection: false
+
+  - name: "Porkbun DNS"
+    pattern: "(curitiba|fortaleza|maceio)\\.ns\\.porkbun\\.com$"
+    notes: >
+      Porkbun offers free DNS hosting with no domain ownership verification.
+      A free account can add any domain as a zone.
+      NS: curitiba.ns.porkbun.com, fortaleza.ns.porkbun.com, maceio.ns.porkbun.com.
+      Needs verification — behaviour may have changed since initial reports.
+    fp_risk: true
+    custom_detection: false
+
+  - name: "Gcore (G-Core Labs) DNS"
+    pattern: "ns[12]\\.gcorelabs\\.net$"
+    notes: >
+      Gcore provides free managed DNS with no ownership verification.
+      NS: ns1.gcorelabs.net / ns2.gcorelabs.net.
+      Free tier account creation allows adding any domain zone.
+      Confirm current behaviour before reporting.
+    fp_risk: true
+    custom_detection: false
+
+  - name: "Bunny DNS"
+    pattern: "(kiki|coco)\\.bunny\\.net$"
+    notes: >
+      Bunny.net (CDN provider) offers a DNS service.
+      NS: kiki.bunny.net / coco.bunny.net.
+      Reports suggest zones can be created without domain ownership verification on the
+      free tier. Needs active verification.
+    fp_risk: true
+    custom_detection: false

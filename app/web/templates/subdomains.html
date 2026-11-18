@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}Subdomains - STOscanner{% endblock %}
+
+{% block extra_css %}
+<style>
+.filter-card .form-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">Subdomains</h1>
+            <p class="text-muted">All discovered subdomains with filtering options</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4 filter-card">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-2">
+                    <label for="state" class="form-label">State</label>
+                    <select class="form-select" id="state" name="state">
+                        <option value="">Any</option>
+                        {% for s in states %}
+                        <option value="{{ s }}" {% if state == s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="min_confidence" class="form-label">Min Confidence</label>
+                    <input type="number" class="form-control" id="min_confidence" name="min_confidence" 
+                           value="{{ min_confidence }}" min="0" max="100">
+                </div>
+                <div class="col-md-2">
+                    <label for="max_confidence" class="form-label">Max Confidence</label>
+                    <input type="number" class="form-control" id="max_confidence" name="max_confidence" 
+                           value="{{ max_confidence }}" min="0" max="100">
+                </div>
+                <div class="col-md-3">
+                    <label for="program_id" class="form-label">Program</label>
+                    <select class="form-select" id="program_id" name="program_id">
+                        <option value="">All Programs</option>
+                        {% for p in programs %}
+                        <option value="{{ p.id }}" {% if program_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="scope_id" class="form-label">Scope</label>
+                    <select class="form-select" id="scope_id" name="scope_id">
+                        <option value="">All Scopes</option>
+                        {% for s in scopes %}
+                        <option value="{{ s.id }}" {% if scope_id == s.id %}selected{% endif %}>{{ s.domain }} ({{ s.program_name }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="order_by" class="form-label">Order By</label>
+                    <select class="form-select" id="order_by" name="order_by">
+                        <option value="confidence" {% if order_by == 'confidence' %}selected{% endif %}>Confidence</option>
+                        <option value="name" {% if order_by == 'name' %}selected{% endif %}>Name</option>
+                        <option value="last_scanned_at" {% if order_by == 'last_scanned_at' %}selected{% endif %}>Last Scanned</option>
+                        <option value="state" {% if order_by == 'state' %}selected{% endif %}>State</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="per_page" class="form-label">Per Page</label>
+                    <select class="form-select" id="per_page" name="per_page">
+                        <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                        <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                        <option value="200" {% if per_page == 200 %}selected{% endif %}>200</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <div class="d-grid gap-2 d-md-flex">
+                        <button type="submit" class="btn btn-primary">Apply Filters</button>
+                        <a href="/web/subdomains" class="btn btn-outline-secondary">Clear</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Subdomains Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>{{ total_count }} Subdomain{% if total_count != 1 %}s{% endif %}</span>
+            <div>
+                {% if page > 1 %}
+                <a href="?page={{ page-1 }}{% if state %}&state={{ state }}{% endif %}{% if min_confidence %}&min_confidence={{ min_confidence }}{% endif %}{% if max_confidence %}&max_confidence={{ max_confidence }}{% endif %}{% if scope_id %}&scope_id={{ scope_id }}{% endif %}{% if program_id %}&program_id={{ program_id }}{% endif %}&order_by={{ order_by }}&per_page={{ per_page }}" 
+                   class="btn btn-sm btn-outline-secondary me-2">Previous</a>
+                {% endif %}
+                {% if page < total_pages %}
+                <a href="?page={{ page+1 }}{% if state %}&state={{ state }}{% endif %}{% if min_confidence %}&min_confidence={{ min_confidence }}{% endif %}{% if max_confidence %}&max_confidence={{ max_confidence }}{% endif %}{% if scope_id %}&scope_id={{ scope_id }}{% endif %}{% if program_id %}&program_id={{ program_id }}{% endif %}&order_by={{ order_by }}&per_page={{ per_page }}" 
+                   class="btn btn-sm btn-outline-secondary">Next</a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if subdomains %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Subdomain</th>
+                            <th>Program</th>
+                            <th>Confidence</th>
+                            <th>State</th>
+                            <th>Provider</th>
+                            <th>CNAME</th>
+                            <th>HTTP</th>
+                            <th>Last Scanned</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for subdomain in subdomains %}
+                        <tr>
+                            <td>
+                                <a href="/web/subdomain/{{ subdomain.id }}" class="text-decoration-none">
+                                    <strong>{{ subdomain.name }}</strong>
+                                </a>
+                                <br>
+                                <small class="text-muted">{{ subdomain.scope_domain }}</small>
+                            </td>
+                            <td>{{ subdomain.program_name }}</td>
+                            <td>
+                                {% if subdomain.confidence >= 90 %}
+                                <span class="badge badge-confidence badge-confidence-90">{{ subdomain.confidence }}%</span>
+                                {% elif subdomain.confidence >= 80 %}
+                                <span class="badge badge-confidence badge-confidence-80">{{ subdomain.confidence }}%</span>
+                                {% elif subdomain.confidence >= 70 %}
+                                <span class="badge badge-confidence badge-confidence-70">{{ subdomain.confidence }}%</span>
+                                {% elif subdomain.confidence >= 60 %}
+                                <span class="badge badge-confidence badge-confidence-60">{{ subdomain.confidence }}%</span>
+                                {% else %}
+                                <span class="badge badge-confidence badge-confidence-50">{{ subdomain.confidence }}%</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge state-badge state-{{ subdomain.state }}">{{ subdomain.state }}</span>
+                            </td>
+                            <td>
+                                {% if subdomain.takeover_provider %}
+                                <span class="provider-badge">{{ subdomain.takeover_provider }}</span>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if subdomain.cname_target %}
+                                <small class="monospace">{{ subdomain.cname_target|truncate(30) }}</small>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if subdomain.http_status %}
+                                <span class="badge {% if subdomain.http_status == 200 %}bg-success{% elif subdomain.http_status >= 400 %}bg-danger{% else %}bg-warning{% endif %}">
+                                    {{ subdomain.http_status }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {% if subdomain.last_scanned_at %}
+                                    {{ subdomain.last_scanned_at[:16]|replace('T', ' ') }}
+                                    {% else %}
+                                    Never
+                                    {% endif %}
+                                </small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="text-muted mb-2">No subdomains match your criteria</div>
+                <small>Try adjusting the filters</small>
+            </div>
+            {% endif %}
+        </div>
+        {% if total_pages > 1 %}
+        <div class="card-footer">
+            <nav aria-label="Subdomains pagination">
+                <ul class="pagination pagination-sm mb-0 justify-content-center">
+                    {% if page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page-1 }}{% if state %}&state={{ state }}{% endif %}{% if min_confidence %}&min_confidence={{ min_confidence }}{% endif %}{% if max_confidence %}&max_confidence={{ max_confidence }}{% endif %}{% if scope_id %}&scope_id={{ scope_id }}{% endif %}{% if program_id %}&program_id={{ program_id }}{% endif %}&order_by={{ order_by }}&per_page={{ per_page }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for p in range(1, total_pages + 1) %}
+                        {% if p == page %}
+                        <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+                        {% elif p >= page-2 and p <= page+2 %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ p }}{% if state %}&state={{ state }}{% endif %}{% if min_confidence %}&min_confidence={{ min_confidence }}{% endif %}{% if max_confidence %}&max_confidence={{ max_confidence }}{% endif %}{% if scope_id %}&scope_id={{ scope_id }}{% endif %}{% if program_id %}&program_id={{ program_id }}{% endif %}&order_by={{ order_by }}&per_page={{ per_page }}">{{ p }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page+1 }}{% if state %}&state={{ state }}{% endif %}{% if min_confidence %}&min_confidence={{ min_confidence }}{% endif %}{% if max_confidence %}&max_confidence={{ max_confidence }}{% endif %}{% if scope_id %}&scope_id={{ scope_id }}{% endif %}{% if program_id %}&program_id={{ program_id }}{% endif %}&order_by={{ order_by }}&per_page={{ per_page }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Update scope dropdown based on program selection
+    const programSelect = document.getElementById('program_id');
+    const scopeSelect = document.getElementById('scope_id');
+    
+    if (programSelect && scopeSelect) {
+        programSelect.addEventListener('change', function() {
+            const programId = this.value;
+            // This would ideally be an AJAX call to filter scopes
+            // For now, we'll just submit the form
+            if (programId) {
+                // Find scopes for this program and show/hide options
+                const scopes = JSON.parse('{{ scopes|tojson }}');
+                Array.from(scopeSelect.options).forEach(option => {
+                    if (option.value === '') return; // Keep "All Scopes" option
+                    const scope = scopes.find(s => s.id == option.value);
+                    if (scope && scope.program_id == programId) {
+                        option.style.display = '';
+                    } else {
+                        option.style.display = 'none';
+                    }
+                });
+                // Reset to "All Scopes" if current selection is hidden
+                if (scopeSelect.value && scopeSelect.options[scopeSelect.selectedIndex].style.display === 'none') {
+                    scopeSelect.value = '';
+                }
+            } else {
+                // Show all scopes
+                Array.from(scopeSelect.options).forEach(option => {
+                    option.style.display = '';
+                });
+            }
+        });
+        
+        // Trigger change on page load to apply initial filtering
+        programSelect.dispatchEvent(new Event('change'));
+    }
+});
+</script>
+{% endblock %}

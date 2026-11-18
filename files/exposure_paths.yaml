@@ -1,0 +1,1043 @@
+# exposure_paths.yaml
+#
+# High-signal exposure paths for bug bounty.
+# Every path here has realistic bounty potential.
+#
+# Fields:
+#   path        - URL path to probe
+#   severity    - critical | high | medium
+#   description - Finding description for Discord alert
+#   signatures  - Strings that MUST appear in body to confirm (empty = 200 is enough)
+#   tags        - Grouping for filtering
+#   prio        - Scan priority (1=highest, 10=lowest). Lower = checked first per subdomain.
+#                 Critical credential leaks: 1-2, Keys/certs: 2-3, DB dumps: 3-4,
+#                 Backups/archives: 5-6, Debug panels: 6-7, Low-signal: 8-10
+
+# ===========================================================================
+# GIT REPOSITORY EXPOSURE
+# critical — git-dumper can reconstruct entire source tree
+# ===========================================================================
+
+- path: /.git/HEAD
+  severity: critical
+  description: "Git HEAD exposed — full source code recoverable with git-dumper"
+  signatures: ["ref: refs/"]
+  tags: [git]
+  prio: 1
+
+- path: /.git/config
+  severity: critical
+  description: "Git config exposed — may contain remote URLs with embedded credentials"
+  signatures: ["[core]"]
+  tags: [git]
+  prio: 2
+
+- path: /.git/index
+  severity: critical
+  description: "Git index exposed — full list of all tracked files recoverable"
+  signatures: []
+  tags: [git]
+  prio: 2
+
+- path: /.git/packed-refs
+  severity: high
+  description: "Git packed-refs exposed — branch and tag names visible"
+  signatures: ["refs/heads/"]
+  tags: [git]
+  prio: 3
+
+- path: /.git/logs/HEAD
+  severity: high
+  description: "Git reflog exposed — commit history, author emails, branch names"
+  signatures: ["HEAD@{"]
+  tags: [git]
+  prio: 3
+
+# ===========================================================================
+# ENVIRONMENT / CREDENTIAL FILES
+# Most common critical finding in bug bounty
+# ===========================================================================
+
+- path: /.env
+  severity: critical
+  description: ".env exposed — DB credentials, API keys, app secrets"
+  signatures: ["APP_", "DB_", "SECRET", "PASSWORD", "TOKEN", "KEY=", "AWS_"]
+  tags: [env, credentials]
+  prio: 1
+
+- path: /.env.local
+  severity: critical
+  description: ".env.local exposed"
+  signatures: ["APP_", "DB_", "SECRET", "PASSWORD", "TOKEN", "KEY="]
+  tags: [env, credentials]
+  prio: 2
+
+- path: /.env.development
+  severity: critical
+  description: ".env.development exposed"
+  signatures: ["APP_", "DB_", "SECRET", "PASSWORD", "TOKEN"]
+  tags: [env, credentials]
+  prio: 2
+
+- path: /.env.staging
+  severity: critical
+  description: ".env.staging exposed — staging credentials often reused in prod"
+  signatures: ["APP_", "DB_", "SECRET", "PASSWORD", "TOKEN"]
+  tags: [env, credentials]
+  prio: 2
+
+- path: /.env.production
+  severity: critical
+  description: ".env.production exposed"
+  signatures: ["APP_", "DB_", "SECRET", "PASSWORD", "TOKEN"]
+  tags: [env, credentials]
+  prio: 1
+
+- path: /.env.prod
+  severity: critical
+  description: ".env.prod exposed"
+  signatures: ["APP_", "DB_", "SECRET", "PASSWORD", "TOKEN"]
+  tags: [env, credentials]
+  prio: 1
+
+- path: /.env.backup
+  severity: critical
+  description: ".env.backup exposed"
+  signatures: ["APP_", "DB_", "SECRET", "PASSWORD", "TOKEN"]
+  tags: [env, credentials]
+  prio: 2
+
+- path: /.env.bak
+  severity: critical
+  description: ".env.bak exposed"
+  signatures: ["APP_", "DB_", "SECRET", "PASSWORD", "TOKEN"]
+  tags: [env, credentials]
+  prio: 2
+
+- path: /.env.old
+  severity: critical
+  description: ".env.old exposed — old credentials may still be valid"
+  signatures: ["APP_", "DB_", "SECRET", "PASSWORD", "TOKEN"]
+  tags: [env, credentials]
+  prio: 2
+
+- path: /.env.save
+  severity: critical
+  description: ".env.save exposed"
+  signatures: ["APP_", "DB_", "SECRET", "PASSWORD", "TOKEN"]
+  tags: [env, credentials]
+  prio: 3
+
+- path: /env.js
+  severity: critical
+  description: "JavaScript env config exposed — frontend environment variables with keys"
+  signatures: ["apiKey", "API_KEY", "SECRET", "baseUrl"]
+  tags: [env, credentials]
+  prio: 2
+
+- path: /config.php
+  severity: high
+  description: "config.php exposed — DB credentials, connection strings"
+  signatures: ["password", "DB_PASS", "define(", "mysql_connect"]
+  tags: [env, credentials]
+  prio: 3
+
+- path: /configuration.php
+  severity: high
+  description: "configuration.php exposed"
+  signatures: ["password", "secret", "define("]
+  tags: [env, credentials]
+  prio: 3
+
+- path: /settings.py
+  severity: high
+  description: "Django settings.py exposed — SECRET_KEY, DB config"
+  signatures: ["SECRET_KEY", "DATABASES", "INSTALLED_APPS"]
+  tags: [env, credentials, python]
+  prio: 3
+
+- path: /local_settings.py
+  severity: critical
+  description: "Django local_settings.py exposed — production secret overrides"
+  signatures: ["SECRET_KEY", "DATABASES", "PASSWORD"]
+  tags: [env, credentials, python]
+  prio: 2
+
+- path: /application.properties
+  severity: high
+  description: "Spring application.properties exposed"
+  signatures: ["spring.", "datasource.", "password="]
+  tags: [env, credentials, java]
+  prio: 3
+
+- path: /application.yml
+  severity: high
+  description: "Spring application.yml exposed"
+  signatures: ["spring:", "datasource:", "password:"]
+  tags: [env, credentials, java]
+  prio: 3
+
+- path: /application-production.yml
+  severity: critical
+  description: "Spring production application.yml exposed"
+  signatures: ["spring:", "datasource:", "password:"]
+  tags: [env, credentials, java]
+  prio: 2
+
+- path: /application-prod.yml
+  severity: critical
+  description: "Spring prod application.yml exposed"
+  signatures: ["spring:", "datasource:", "password:"]
+  tags: [env, credentials, java]
+  prio: 2
+
+- path: /application-staging.yml
+  severity: high
+  description: "Spring staging application.yml exposed"
+  signatures: ["spring:", "datasource:", "password:"]
+  tags: [env, credentials, java]
+  prio: 3
+
+- path: /appsettings.json
+  severity: high
+  description: "ASP.NET appsettings.json exposed — connection strings, secrets"
+  signatures: ["ConnectionStrings", "Password", "ApiKey"]
+  tags: [env, credentials, dotnet]
+  prio: 3
+
+- path: /appsettings.Production.json
+  severity: critical
+  description: "ASP.NET production appsettings exposed"
+  signatures: ["ConnectionStrings", "Password", "Secret"]
+  tags: [env, credentials, dotnet]
+  prio: 2
+
+- path: /appsettings.Staging.json
+  severity: high
+  description: "ASP.NET staging appsettings exposed"
+  signatures: ["ConnectionStrings", "Password", "Secret"]
+  tags: [env, credentials, dotnet]
+  prio: 3
+
+- path: /web.config
+  severity: high
+  description: "ASP.NET web.config exposed — connection strings, machine keys"
+  signatures: ["connectionString", "machineKey", "password=", "encrypt="]
+  tags: [env, credentials, dotnet]
+  prio: 3
+
+- path: /database.yml
+  severity: critical
+  description: "Rails database.yml exposed — DB host, name, username, password"
+  signatures: ["adapter:", "database:", "password:", "username:"]
+  tags: [env, credentials, rails]
+  prio: 1
+
+- path: /database.yaml
+  severity: critical
+  description: "Rails database.yaml exposed"
+  signatures: ["adapter:", "database:", "password:"]
+  tags: [env, credentials, rails]
+  prio: 1
+
+- path: /secrets.yml
+  severity: critical
+  description: "Rails secrets.yml exposed — secret_key_base and app secrets"
+  signatures: ["secret_key_base", "secret_token", "production:"]
+  tags: [env, credentials, rails]
+  prio: 2
+
+- path: /config/secrets.yml
+  severity: critical
+  description: "Rails config/secrets.yml exposed"
+  signatures: ["secret_key_base", "secret_token"]
+  tags: [env, credentials, rails]
+  prio: 2
+
+- path: /config/database.yml
+  severity: critical
+  description: "Rails config/database.yml exposed"
+  signatures: ["adapter:", "database:", "password:"]
+  tags: [env, credentials, rails]
+  prio: 2
+
+- path: /config/credentials.yml.enc
+  severity: high
+  description: "Rails encrypted credentials file exposed — decryptable with master.key"
+  signatures: []
+  tags: [env, credentials, rails]
+  prio: 4
+  min_body_bytes: 32
+
+- path: /config/master.key
+  severity: critical
+  description: "Rails master.key exposed — decrypts credentials.yml.enc"
+  signatures: []
+  tags: [env, credentials, rails]
+  prio: 1
+  min_body_bytes: 16
+
+# ===========================================================================
+# PRIVATE KEYS AND CERTIFICATES
+# ===========================================================================
+
+- path: /id_rsa
+  severity: critical
+  description: "RSA private SSH key exposed"
+  signatures: ["BEGIN RSA PRIVATE KEY", "BEGIN OPENSSH PRIVATE KEY", "BEGIN PRIVATE KEY"]
+  tags: [keys]
+  prio: 1
+
+- path: /id_dsa
+  severity: critical
+  description: "DSA private key exposed"
+  signatures: ["BEGIN DSA PRIVATE KEY", "BEGIN PRIVATE KEY"]
+  tags: [keys]
+  prio: 2
+
+- path: /id_ecdsa
+  severity: critical
+  description: "ECDSA private key exposed"
+  signatures: ["BEGIN EC PRIVATE KEY", "BEGIN PRIVATE KEY"]
+  tags: [keys]
+  prio: 2
+
+- path: /id_ed25519
+  severity: critical
+  description: "Ed25519 private key exposed"
+  signatures: ["BEGIN OPENSSH PRIVATE KEY"]
+  tags: [keys]
+  prio: 2
+
+- path: /.ssh/id_rsa
+  severity: critical
+  description: "SSH private key exposed under .ssh/"
+  signatures: ["BEGIN RSA PRIVATE KEY", "BEGIN OPENSSH PRIVATE KEY"]
+  tags: [keys]
+  prio: 1
+
+- path: /server.key
+  severity: critical
+  description: "TLS server private key exposed"
+  signatures: ["BEGIN RSA PRIVATE KEY", "BEGIN PRIVATE KEY", "BEGIN EC PRIVATE KEY"]
+  tags: [keys]
+  prio: 2
+
+- path: /private.key
+  severity: critical
+  description: "Private key file exposed"
+  signatures: ["BEGIN RSA PRIVATE KEY", "BEGIN PRIVATE KEY", "BEGIN EC PRIVATE KEY"]
+  tags: [keys]
+  prio: 2
+
+- path: /private.pem
+  severity: critical
+  description: "PEM private key exposed"
+  signatures: ["BEGIN RSA PRIVATE KEY", "BEGIN PRIVATE KEY"]
+  tags: [keys]
+  prio: 2
+
+- path: /ssl.key
+  severity: critical
+  description: "SSL private key exposed"
+  signatures: ["BEGIN RSA PRIVATE KEY", "BEGIN PRIVATE KEY"]
+  tags: [keys]
+  prio: 2
+
+- path: /server.pem
+  severity: critical
+  description: "Server PEM file exposed — may contain private key"
+  signatures: ["BEGIN RSA PRIVATE KEY", "BEGIN PRIVATE KEY", "BEGIN CERTIFICATE"]
+  tags: [keys]
+  prio: 2
+
+- path: /client.p12
+  severity: critical
+  description: "PKCS12 client certificate bundle exposed — contains private key"
+  signatures: []
+  tags: [keys]
+  prio: 3
+
+# ===========================================================================
+# DATABASE DUMPS
+# ===========================================================================
+
+- path: /database.sql
+  severity: critical
+  description: "SQL database dump exposed"
+  signatures: ["CREATE TABLE", "INSERT INTO", "DROP TABLE", "-- MySQL dump"]
+  tags: [database]
+  prio: 3
+
+- path: /db.sql
+  severity: critical
+  description: "SQL dump exposed"
+  signatures: ["CREATE TABLE", "INSERT INTO", "DROP TABLE"]
+  tags: [database]
+  prio: 3
+
+- path: /dump.sql
+  severity: critical
+  description: "SQL dump exposed"
+  signatures: ["CREATE TABLE", "INSERT INTO"]
+  tags: [database]
+  prio: 3
+
+- path: /backup.sql
+  severity: critical
+  description: "SQL backup exposed"
+  signatures: ["CREATE TABLE", "INSERT INTO"]
+  tags: [database]
+  prio: 3
+
+- path: /data.sql
+  severity: critical
+  description: "SQL data file exposed"
+  signatures: ["CREATE TABLE", "INSERT INTO"]
+  tags: [database]
+  prio: 4
+
+- path: /mysql.sql
+  severity: critical
+  description: "MySQL dump exposed"
+  signatures: ["CREATE TABLE", "INSERT INTO", "-- MySQL dump"]
+  tags: [database]
+  prio: 3
+
+- path: /users.sql
+  severity: critical
+  description: "Users table dump — likely contains password hashes"
+  signatures: ["CREATE TABLE", "INSERT INTO"]
+  tags: [database]
+  prio: 3
+
+- path: /accounts.sql
+  severity: critical
+  description: "Accounts table dump exposed"
+  signatures: ["CREATE TABLE", "INSERT INTO"]
+  tags: [database]
+  prio: 3
+
+- path: /customers.sql
+  severity: critical
+  description: "Customers table dump — PII risk"
+  signatures: ["CREATE TABLE", "INSERT INTO"]
+  tags: [database]
+  prio: 3
+
+- path: /prod.sql
+  severity: critical
+  description: "Production SQL dump exposed"
+  signatures: ["CREATE TABLE", "INSERT INTO"]
+  tags: [database]
+  prio: 3
+
+- path: /production.sql
+  severity: critical
+  description: "Production SQL dump exposed"
+  signatures: ["CREATE TABLE", "INSERT INTO"]
+  tags: [database]
+  prio: 3
+
+- path: /dev.sql
+  severity: critical
+  description: "Dev database dump exposed"
+  signatures: ["CREATE TABLE", "INSERT INTO"]
+  tags: [database]
+  prio: 4
+
+- path: /schema.sql
+  severity: high
+  description: "DB schema SQL exposed — reveals full table/column structure"
+  signatures: ["CREATE TABLE", "CREATE INDEX", "ALTER TABLE"]
+  tags: [database]
+  prio: 5
+
+- path: /migrate.sql
+  severity: high
+  description: "Migration SQL exposed — schema history and data transformations"
+  signatures: ["CREATE TABLE", "ALTER TABLE", "INSERT INTO"]
+  tags: [database]
+  prio: 5
+
+# ===========================================================================
+# BACKUP AND ARCHIVE FILES
+# ===========================================================================
+
+- path: /backup.zip
+  severity: high
+  description: "Backup zip archive exposed"
+  signatures: ["PK\x03\x04"]
+  tags: [backup]
+  prio: 5
+
+- path: /backup.tar.gz
+  severity: high
+  description: "Backup tar.gz exposed"
+  signatures: []
+  tags: [backup]
+  prio: 5
+
+- path: /backup.tar
+  severity: high
+  description: "Backup tar archive exposed"
+  signatures: []
+  tags: [backup]
+  prio: 5
+
+- path: /backup.7z
+  severity: high
+  description: "7-Zip backup archive exposed"
+  signatures: ["7z\xBC\xAF\x27\x1C"]
+  tags: [backup]
+  prio: 5
+
+- path: /site.zip
+  severity: high
+  description: "Site backup zip exposed"
+  signatures: ["PK\x03\x04"]
+  tags: [backup]
+  prio: 5
+
+- path: /site.tar.gz
+  severity: high
+  description: "Site backup tar.gz exposed"
+  signatures: []
+  tags: [backup]
+  prio: 5
+
+- path: /www.zip
+  severity: high
+  description: "Web root backup zip exposed"
+  signatures: ["PK\x03\x04"]
+  tags: [backup]
+  prio: 5
+
+- path: /html.zip
+  severity: high
+  description: "html directory backup exposed"
+  signatures: ["PK\x03\x04"]
+  tags: [backup]
+  prio: 6
+
+- path: /public_html.zip
+  severity: high
+  description: "public_html backup exposed"
+  signatures: ["PK\x03\x04"]
+  tags: [backup]
+  prio: 6
+
+- path: /web.zip
+  severity: high
+  description: "Web directory backup exposed"
+  signatures: ["PK\x03\x04"]
+  tags: [backup]
+  prio: 6
+
+- path: /old.zip
+  severity: high
+  description: "Old version archive exposed"
+  signatures: ["PK\x03\x04"]
+  tags: [backup]
+  prio: 6
+
+- path: /archive.zip
+  severity: high
+  description: "Archive zip exposed"
+  signatures: ["PK\x03\x04"]
+  tags: [backup]
+  prio: 6
+
+- path: /app.zip
+  severity: high
+  description: "App archive exposed"
+  signatures: ["PK\x03\x04"]
+  tags: [backup]
+  prio: 6
+
+- path: /deploy.zip
+  severity: high
+  description: "Deployment archive exposed"
+  signatures: ["PK\x03\x04"]
+  tags: [backup]
+  prio: 6
+
+- path: /.htpasswd
+  severity: high
+  description: ".htpasswd exposed — hashed HTTP Basic Auth credentials"
+  signatures: ["$apr1$", "$2y$", "{SHA}", "$1$"]
+  tags: [credentials]
+  prio: 3
+
+# ===========================================================================
+# WORDPRESS
+# ===========================================================================
+
+- path: /wp-config.php.bak
+  severity: critical
+  description: "WordPress config backup — DB host, name, username, password"
+  signatures: ["DB_PASSWORD", "DB_USER", "DB_NAME", "table_prefix"]
+  tags: [wordpress, credentials]
+  prio: 2
+
+- path: /wp-config.php~
+  severity: critical
+  description: "WordPress config swap file — DB credentials"
+  signatures: ["DB_PASSWORD", "DB_USER", "DB_NAME"]
+  tags: [wordpress, credentials]
+  prio: 2
+
+- path: /wp-config.bak
+  severity: critical
+  description: "WordPress config backup"
+  signatures: ["DB_PASSWORD", "DB_USER", "DB_NAME"]
+  tags: [wordpress, credentials]
+  prio: 2
+
+- path: /wp-config.old
+  severity: critical
+  description: "Old WordPress config exposed"
+  signatures: ["DB_PASSWORD", "DB_USER", "DB_NAME"]
+  tags: [wordpress, credentials]
+  prio: 2
+
+- path: /wp-config.txt
+  severity: critical
+  description: "WordPress config saved as .txt"
+  signatures: ["DB_PASSWORD", "DB_USER", "DB_NAME"]
+  tags: [wordpress, credentials]
+  prio: 2
+
+- path: /wp-config.php.orig
+  severity: critical
+  description: "WordPress config .orig file"
+  signatures: ["DB_PASSWORD", "DB_USER", "DB_NAME"]
+  tags: [wordpress, credentials]
+  prio: 3
+
+- path: /wp-config.php.save
+  severity: critical
+  description: "WordPress config .save file"
+  signatures: ["DB_PASSWORD", "DB_USER", "DB_NAME"]
+  tags: [wordpress, credentials]
+  prio: 3
+
+- path: /wp-config.php.swp
+  severity: critical
+  description: "WordPress config Vim swap file"
+  signatures: ["DB_PASSWORD", "DB_USER", "DB_NAME"]
+  tags: [wordpress, credentials]
+  prio: 3
+
+# ===========================================================================
+# LARAVEL / PHP
+# ===========================================================================
+
+- path: /storage/logs/laravel.log
+  severity: high
+  description: "Laravel log exposed — stack traces leak credentials, DB queries, internals"
+  signatures: ["local.ERROR", "production.ERROR", "Stack trace", "Illuminate\\"]
+  tags: [laravel, logs]
+  prio: 6
+
+- path: /app/storage/logs/laravel.log
+  severity: high
+  description: "Laravel log exposed (app/storage path)"
+  signatures: ["local.ERROR", "production.ERROR", "Stack trace"]
+  tags: [laravel, logs]
+  prio: 6
+
+- path: /phpinfo.php
+  severity: high
+  description: "phpinfo() exposed — PHP version, all env vars, loaded extensions, file paths"
+  signatures: ["PHP Version", "phpinfo()"]
+  tags: [php]
+  prio: 6
+
+- path: /info.php
+  severity: high
+  description: "phpinfo() exposed"
+  signatures: ["PHP Version", "phpinfo()"]
+  tags: [php]
+  prio: 6
+
+- path: /php.ini
+  severity: high
+  description: "php.ini exposed — PHP config including paths and extension settings"
+  signatures: ["[PHP]", "extension=", "display_errors"]
+  tags: [php]
+  prio: 6
+
+- path: /php_errors.log
+  severity: high
+  description: "PHP error log — stack traces with file paths and variable values"
+  signatures: ["PHP Fatal error", "PHP Warning", "Stack trace"]
+  tags: [php, logs]
+  prio: 7
+
+- path: /error_log
+  severity: high
+  description: "PHP/Apache error log exposed"
+  signatures: ["PHP Fatal error", "PHP Warning", "[error]"]
+  tags: [php, logs]
+  prio: 7
+
+- path: /debug.log
+  severity: high
+  description: "Debug log at web root"
+  signatures: ["ERROR", "Exception", "DEBUG", "password", "token"]
+  tags: [logs]
+  prio: 7
+
+# ===========================================================================
+# NODE.JS
+# ===========================================================================
+
+- path: /.npmrc
+  severity: high
+  description: ".npmrc exposed — npm auth tokens for private registries"
+  signatures: ["_authToken", "//registry", "//npm.pkg"]
+  tags: [node, credentials]
+  prio: 3
+
+# ===========================================================================
+# PYTHON / DJANGO / CELERY
+# ===========================================================================
+
+- path: /celeryconfig.py
+  severity: high
+  description: "Celery config exposed — broker URL often contains Redis/AMQP credentials"
+  signatures: ["BROKER_URL", "broker_url", "redis://", "amqp://"]
+  tags: [python, credentials]
+  prio: 4
+
+- path: /celery.py
+  severity: high
+  description: "Celery app file exposed — may contain broker credentials"
+  signatures: ["broker_url", "BROKER_URL", "redis://", "amqp://"]
+  tags: [python, credentials]
+  prio: 4
+
+# ===========================================================================
+# SPRING BOOT ACTUATOR
+# ===========================================================================
+
+- path: /actuator/env
+  severity: critical
+  description: "Spring Actuator /env — dumps ALL environment variables including DB passwords and API keys"
+  signatures: ['"activeProfiles"', '"propertySources"', '"systemEnvironment"']
+  tags: [spring, java, actuator]
+  prio: 2
+
+- path: /actuator/beans
+  severity: high
+  description: "Spring Actuator /beans — full Spring context dump, all registered beans"
+  signatures: ['"beans"', '"scope"', '"type"']
+  tags: [spring, java, actuator]
+  prio: 5
+
+- path: /actuator/mappings
+  severity: high
+  description: "Spring Actuator /mappings — all URL mappings, controllers, and handlers"
+  signatures: ['"mappings"', '"dispatcherServlets"']
+  tags: [spring, java, actuator]
+  prio: 5
+
+- path: /actuator/httptrace
+  severity: high
+  description: "Spring Actuator /httptrace — last 100 HTTP requests with headers and auth tokens"
+  signatures: ['"traces"', '"request"', '"response"']
+  tags: [spring, java, actuator]
+  prio: 5
+
+- path: /actuator/heapdump
+  severity: high
+  description: "Spring Actuator /heapdump — full JVM heap dump, contains secrets in memory"
+  signatures: ["JAVA PROFILE", "\x1f\x8b\x08"]
+  tags: [spring, java, actuator]
+  prio: 6
+
+- path: /actuator/loggers
+  severity: medium
+  description: "Spring Actuator /loggers — logger levels, writable if not secured"
+  signatures: ['"levels"', '"loggers"']
+  tags: [spring, java, actuator]
+  prio: 7
+
+- path: /actuator/scheduledtasks
+  severity: medium
+  description: "Spring Actuator /scheduledtasks — cron expressions and scheduled job details"
+  signatures: ['"cron"', '"fixedDelay"', '"fixedRate"']
+  tags: [spring, java, actuator]
+  prio: 8
+
+# ===========================================================================
+# AWS / CLOUD CREDENTIALS
+# ===========================================================================
+
+- path: /.aws/credentials
+  severity: critical
+  description: "AWS credentials file — access key ID and secret access key"
+  signatures: ["aws_access_key_id", "aws_secret_access_key", "[default]"]
+  tags: [aws, credentials, cloud]
+  prio: 1
+
+- path: /.aws/config
+  severity: high
+  description: "AWS config exposed — region, output format, profile names"
+  signatures: ["[default]", "region", "[profile"]
+  tags: [aws, cloud]
+  prio: 4
+
+- path: /credentials
+  severity: critical
+  description: "Generic credentials file at root"
+  signatures: ["aws_access_key_id", "password", "secret", "token"]
+  tags: [credentials, cloud]
+  prio: 2
+
+- path: /service-account.json
+  severity: critical
+  description: "GCP service account key — full API access to Google Cloud resources"
+  signatures: ['"type": "service_account"', '"private_key"', '"client_email"']
+  tags: [gcloud, credentials, cloud]
+  prio: 1
+
+- path: /gcp-key.json
+  severity: critical
+  description: "GCP key file exposed"
+  signatures: ['"type": "service_account"', '"private_key"']
+  tags: [gcloud, credentials, cloud]
+  prio: 1
+
+- path: /google-credentials.json
+  severity: critical
+  description: "Google credentials JSON exposed"
+  signatures: ['"type": "service_account"', '"private_key"', '"client_secret"']
+  tags: [gcloud, credentials, cloud]
+  prio: 1
+
+- path: /terraform.tfstate
+  severity: critical
+  description: "Terraform state file — contains ALL infrastructure config including plaintext secrets"
+  signatures: ['"terraform_version"', '"resources"']
+  tags: [terraform, cloud, credentials]
+  prio: 2
+
+- path: /terraform.tfstate.backup
+  severity: critical
+  description: "Terraform state backup exposed"
+  signatures: ['"terraform_version"', '"resources"']
+  tags: [terraform, cloud, credentials]
+  prio: 3
+
+- path: /.terraform/terraform.tfstate
+  severity: critical
+  description: "Terraform state in .terraform/ exposed"
+  signatures: ['"terraform_version"', '"resources"']
+  tags: [terraform, cloud, credentials]
+  prio: 3
+
+- path: /terraform.tfvars
+  severity: critical
+  description: "Terraform variables file — contains secrets passed to infrastructure"
+  signatures: ["password", "secret", "token", "key", "="]
+  tags: [terraform, cloud, credentials]
+  prio: 2
+
+- path: /terraform.tfvars.json
+  severity: critical
+  description: "Terraform variables JSON exposed"
+  signatures: ["password", "secret", "token", "access_key"]
+  tags: [terraform, cloud, credentials]
+  prio: 2
+
+- path: /docker-compose.yml
+  severity: high
+  description: "docker-compose.yml — service config, credentials in environment vars"
+  signatures: ["services:", "environment:"]
+  tags: [docker, cloud, credentials]
+  prio: 4
+
+- path: /docker-compose.yaml
+  severity: high
+  description: "docker-compose.yaml exposed"
+  signatures: ["services:", "environment:"]
+  tags: [docker, cloud, credentials]
+  prio: 4
+
+- path: /docker-compose.prod.yml
+  severity: critical
+  description: "Production docker-compose exposed — production credentials in env vars"
+  signatures: ["services:", "environment:", "password", "SECRET"]
+  tags: [docker, cloud, credentials]
+  prio: 2
+
+- path: /docker-compose.production.yml
+  severity: critical
+  description: "Production docker-compose exposed"
+  signatures: ["services:", "environment:"]
+  tags: [docker, cloud, credentials]
+  prio: 2
+
+# ===========================================================================
+# KUBERNETES
+# ===========================================================================
+
+- path: /.kube/config
+  severity: critical
+  description: "Kubeconfig exposed — full cluster access credentials and API server endpoints"
+  signatures: ["apiVersion:", "clusters:", "certificate-authority-data"]
+  tags: [kubernetes, credentials, cloud]
+  prio: 1
+
+- path: /kubeconfig
+  severity: critical
+  description: "Kubeconfig at root exposed"
+  signatures: ["apiVersion:", "clusters:", "certificate-authority-data"]
+  tags: [kubernetes, credentials, cloud]
+  prio: 1
+
+- path: /k8s/secret.yaml
+  severity: critical
+  description: "Kubernetes secret manifest exposed — base64 encoded credentials"
+  signatures: ["apiVersion:", "kind: Secret", "data:"]
+  tags: [kubernetes, credentials, cloud]
+  prio: 3
+
+- path: /kubernetes/secret.yaml
+  severity: critical
+  description: "Kubernetes secret manifest exposed"
+  signatures: ["apiVersion:", "kind: Secret"]
+  tags: [kubernetes, credentials, cloud]
+  prio: 3
+
+- path: /helm/values-production.yaml
+  severity: critical
+  description: "Helm production values exposed — production secrets and config"
+  signatures: ["password", "secret", "token", "image:"]
+  tags: [kubernetes, cloud, credentials]
+  prio: 3
+
+# ===========================================================================
+# CI/CD WITH ACTUAL CREDENTIAL EXPOSURE
+# ===========================================================================
+
+- path: /.vault_pass
+  severity: critical
+  description: "Ansible vault password file — decrypts all encrypted Ansible variables"
+  signatures: []
+  tags: [cicd, credentials]
+  prio: 2
+  min_body_bytes: 4
+
+- path: /vault_pass.txt
+  severity: critical
+  description: "Ansible vault password as .txt"
+  signatures: []
+  tags: [cicd, credentials]
+  prio: 2
+  min_body_bytes: 4
+
+- path: /ansible.cfg
+  severity: high
+  description: "Ansible config — inventory paths, become password, vault config"
+  signatures: ["[defaults]", "inventory", "remote_user"]
+  tags: [cicd, credentials]
+  prio: 5
+
+- path: /group_vars/all.yml
+  severity: critical
+  description: "Ansible group_vars/all.yml — variables for all hosts, often contains secrets"
+  signatures: ["ansible_", "password", "secret", "token", "vault"]
+  tags: [cicd, credentials]
+  prio: 3
+
+- path: /group_vars/all/vault.yml
+  severity: critical
+  description: "Ansible vault variables for all hosts"
+  signatures: ["$ANSIBLE_VAULT", "ansible_", "password"]
+  tags: [cicd, credentials]
+  prio: 2
+
+# ===========================================================================
+# JetBrains / IDE with credentials
+# ===========================================================================
+
+- path: /.idea/dataSources.xml
+  severity: critical
+  description: "JetBrains DataSources config — DB connection strings with passwords"
+  signatures: ["<?xml", "data-source", "jdbc:"]
+  tags: [ide, credentials]
+  prio: 3
+
+- path: /.idea/dataSources.local.xml
+  severity: critical
+  description: "JetBrains local DataSources — contains plaintext DB passwords"
+  signatures: ["<?xml", "data-source", "password"]
+  tags: [ide, credentials]
+  prio: 3
+
+# ===========================================================================
+# REDIS / MEMCACHED / BROKER CONFIGS
+# ===========================================================================
+
+- path: /redis.conf
+  severity: high
+  description: "Redis config exposed — requirepass password, bind address, persistence config"
+  signatures: ["requirepass", "bind ", "maxmemory", "# Redis"]
+  tags: [database, credentials]
+  prio: 5
+
+# ===========================================================================
+# MISCELLANEOUS HIGH-SIGNAL
+# ===========================================================================
+
+- path: /console
+  severity: high
+  description: "Web console exposed — Rails console, Werkzeug debugger, or similar"
+  signatures: ["debugger", "irb", "pry", "__debugger"]
+  tags: [debug]
+  prio: 7
+
+- path: /telescope
+  severity: high
+  description: "Laravel Telescope debug panel — full request/response history, DB queries, jobs"
+  signatures: ["Laravel Telescope", "telescope", "Illuminate"]
+  tags: [laravel, debug]
+  prio: 7
+
+- path: /telescope/api/requests
+  severity: high
+  description: "Laravel Telescope API — all recent HTTP requests with payloads"
+  signatures: ['"payload"', '"response"', '"duration"']
+  tags: [laravel, debug]
+  prio: 7
+
+- path: /horizon
+  severity: high
+  description: "Laravel Horizon dashboard — job queue status, failed jobs with payloads"
+  signatures: ["Laravel Horizon", "horizon", "Queue"]
+  tags: [laravel, debug]
+  prio: 7
+
+- path: /_profiler
+  severity: high
+  description: "Symfony profiler — full request debug bar with env vars and DB queries"
+  signatures: ["Symfony", "_profiler", "Debug Toolbar"]
+  tags: [symfony, debug]
+  prio: 7
+
+- path: /_profiler/phpinfo
+  severity: high
+  description: "Symfony profiler phpinfo page"
+  signatures: ["PHP Version", "phpinfo()"]
+  tags: [symfony, debug]
+  prio: 7
+
+- path: /__debug__
+  severity: high
+  description: "Django Debug Toolbar panel — SQL queries, request vars, settings"
+  signatures: ["djdt", "Django Debug Toolbar", "SQL queries"]
+  tags: [django, debug]
+  prio: 7

@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Findings - STOscanner{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">Takeover Findings</h1>
+            <p class="text-muted">High-confidence subdomain takeover opportunities</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="min_confidence" class="form-label">Min Confidence</label>
+                    <input type="number" class="form-control" id="min_confidence" name="min_confidence" 
+                           value="{{ min_confidence }}" min="0" max="100" step="10">
+                </div>
+                <div class="col-md-3">
+                    <label for="hours" class="form-label">Last X Hours</label>
+                    <input type="number" class="form-control" id="hours" name="hours" 
+                           value="{{ hours }}" min="1" max="168">
+                </div>
+                <div class="col-md-3">
+                    <label for="per_page" class="form-label">Per Page</label>
+                    <select class="form-select" id="per_page" name="per_page">
+                        <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                        <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                        <option value="200" {% if per_page == 200 %}selected{% endif %}>200</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Findings Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>{{ total_count }} Finding{% if total_count != 1 %}s{% endif %}</span>
+            <div>
+                {% if page > 1 %}
+                <a href="?page={{ page-1 }}&min_confidence={{ min_confidence }}&hours={{ hours }}&per_page={{ per_page }}" 
+                   class="btn btn-sm btn-outline-secondary me-2">Previous</a>
+                {% endif %}
+                {% if page < total_pages %}
+                <a href="?page={{ page+1 }}&min_confidence={{ min_confidence }}&hours={{ hours }}&per_page={{ per_page }}" 
+                   class="btn btn-sm btn-outline-secondary">Next</a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if findings %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Subdomain</th>
+                            <th>Program</th>
+                            <th>Confidence</th>
+                            <th>State</th>
+                            <th>Provider</th>
+                            <th>CNAME</th>
+                            <th>HTTP</th>
+                            <th>Last Scanned</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for finding in findings %}
+                        <tr>
+                            <td>
+                                <a href="/web/subdomain/{{ finding.id }}" class="text-decoration-none">
+                                    <strong>{{ finding.name }}</strong>
+                                </a>
+                                <br>
+                                <small class="text-muted">{{ finding.scope_domain }}</small>
+                            </td>
+                            <td>{{ finding.program_name }}</td>
+                            <td>
+                                {% if finding.confidence >= 90 %}
+                                <span class="badge badge-confidence badge-confidence-90">{{ finding.confidence }}%</span>
+                                {% elif finding.confidence >= 80 %}
+                                <span class="badge badge-confidence badge-confidence-80">{{ finding.confidence }}%</span>
+                                {% elif finding.confidence >= 70 %}
+                                <span class="badge badge-confidence badge-confidence-70">{{ finding.confidence }}%</span>
+                                {% elif finding.confidence >= 60 %}
+                                <span class="badge badge-confidence badge-confidence-60">{{ finding.confidence }}%</span>
+                                {% else %}
+                                <span class="badge badge-confidence badge-confidence-50">{{ finding.confidence }}%</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge state-badge state-{{ finding.state }}">{{ finding.state }}</span>
+                            </td>
+                            <td>
+                                {% if finding.takeover_provider %}
+                                <span class="provider-badge">{{ finding.takeover_provider }}</span>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if finding.cname_target %}
+                                <small class="monospace">{{ finding.cname_target|truncate(30) }}</small>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if finding.http_status %}
+                                <span class="badge {% if finding.http_status == 200 %}bg-success{% elif finding.http_status >= 400 %}bg-danger{% else %}bg-warning{% endif %}">
+                                    {{ finding.http_status }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {% if finding.last_scanned_at %}
+                                    {{ finding.last_scanned_at[:16]|replace('T', ' ') }}
+                                    {% else %}
+                                    Never
+                                    {% endif %}
+                                </small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="text-muted mb-2">No findings match your criteria</div>
+                <small>Try adjusting the confidence threshold or time range</small>
+            </div>
+            {% endif %}
+        </div>
+        {% if total_pages > 1 %}
+        <div class="card-footer">
+            <nav aria-label="Findings pagination">
+                <ul class="pagination pagination-sm mb-0 justify-content-center">
+                    {% if page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page-1 }}&min_confidence={{ min_confidence }}&hours={{ hours }}&per_page={{ per_page }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for p in range(1, total_pages + 1) %}
+                        {% if p == page %}
+                        <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+                        {% elif p >= page-2 and p <= page+2 %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ p }}&min_confidence={{ min_confidence }}&hours={{ hours }}&per_page={{ per_page }}">{{ p }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page+1 }}&min_confidence={{ min_confidence }}&hours={{ hours }}&per_page={{ per_page }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

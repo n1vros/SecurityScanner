@@ -1,0 +1,91 @@
+# Full STOscanner stack: PostgreSQL, Redis and the web application.
+#
+# Credentials come from .env (see .env.example). Compose refuses to start when
+# DB_USERNAME / DB_PASSWORD / REDIS_PASSWORD are unset, so no default secrets
+# are baked into this file. .env is optional at parse time so that
+# `docker compose config` can run with the values supplied through the shell.
+name: stoscanner
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: stoscanner-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:?set DB_USERNAME in .env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      POSTGRES_DB: ${DB_NAME:-stoscanner}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - stoscanner-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME:-stoscanner}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: stoscanner-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - stoscanner-network
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD} --raw incr ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: stoscanner:local
+    container_name: stoscanner-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Optional when only the required secrets are supplied through the shell;
+    # in normal use .env carries every application setting (API tokens, flags).
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # The container always binds on all interfaces and listens on 8000; PORT
+      # only selects the published host port.
+      HOST: 0.0.0.0
+      PORT: 8000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-stoscanner}
+      DB_USERNAME: ${DB_USERNAME:?set DB_USERNAME in .env}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      # Redis is provisioned for future use; the current code keeps rate-limit
+      # state in-process.
+      REDIS_URL: redis://:${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}@redis:6379/0
+    ports:
+      - "${PORT:-8000}:8000"
+    volumes:
+      - findings_data:/findings
+    networks:
+      - stoscanner-network
+    stop_grace_period: 30s
+
+volumes:
+  postgres_data:
+  redis_data:
+  findings_data:
+
+networks:
+  stoscanner-network:
+    driver: bridge

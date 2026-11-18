@@ -1,0 +1,38 @@
+[
+  {
+    "name": "Example Corp",
+    "platform": "manual",
+    "url": "https://example.com/security",
+    "external_id": "example-corp",
+    "scopes": [
+      "example.com",
+      "api.example.com",
+      "*.example.com",
+      "https://app.example.com",
+      "https://admin.example.com/dashboard"
+    ]
+  },
+  {
+    "name": "Acme Bug Bounty",
+    "platform": "manual",
+    "url": "https://security.acme.io",
+    "scopes": [
+      "acme.io",
+      "*.acme.io",
+      "acme-api.io"
+    ]
+  },
+  {
+    "name": "Self-Hosted Program",
+    "platform": "manual",
+    "scopes": [
+      "targets.internal-bb.com",
+      "api.internal-bb.com",
+      "auth.internal-bb.com"
+    ],
+    "metadata": {
+      "contact": "security@internal-bb.com",
+      "notes": "Private program, added manually"
+    }
+  }
+]

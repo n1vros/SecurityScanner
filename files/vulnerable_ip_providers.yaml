@@ -1,0 +1,511 @@
+# vulnerable_ip_providers.yaml
+#
+# Cloud provider IP indicator registry for dangling IP detection.
+#
+# Used by dns_scanner.py (DanglingIPAnalyzer) to:
+#   1. Confirm the IP belongs to a claimable cloud provider (CIDR index is primary,
+#      this file provides metadata and fallback indicators).
+#   2. Interpret per-provider signals to distinguish "allocated" from "released".
+#   3. Generate structured findings with severity, claim instructions, and evidence.
+#
+# Per-provider fields:
+#   name                  Human-readable display name
+#   cidr_key              Provider key in CIDRIndex (None = not indexed)
+#   can_claim_specific_ip True if the API lets you request a previously-released IP
+#                         directly (highest risk — targeted claim possible)
+#   severity              high / medium / low  (Discord embed colour)
+#   difficulty            easy / medium / hard (how hard to claim after detection)
+#   claim_cmd             Short example claim command / API call
+#   notes                 Extra context for the bug-bounty report
+#
+#   indicators:           Per-provider signals used by DanglingIPAnalyzer
+#     ptr_patterns        Regex list matching PTR hostnames that suggest ALLOCATION
+#                         (i.e. if PTR matches → IP is likely still reserved)
+#     ptr_release_patterns Regex list matching PTR hostnames that suggest RELEASE
+#                         (i.e. PTR reset to generic → pool re-entry)
+#     response_headers    HTTP header key/value pairs that confirm allocation to a
+#                         live cloud resource (LB, gateway, etc.)
+#     dns_label_patterns  FQDN patterns (regex) in PTR or forward DNS that confirm
+#                         the IP is still bound to a named resource
+#     specific_ip_claim   If true, you can attempt to claim this exact IP via API
+#     anchor_ip_behavior  If true, the provider uses "anchor IPs" — ICMP may
+#                         respond even when no ports are open (silent droplet/VM)
+#     icmp_alive_means    "reserved" | "unknown" — what ICMP response implies
+#     no_ptr_means        "released" | "unknown" — what absent/generic PTR implies
+#     tls_cert_check      If true, check TLS cert CN/SANs for foreign domain ownership
+#
+# ──────────────────────────────────────────────────────────────────────────────
+
+providers:
+
+  # ── Tier 1 — Directly supported by IP Hunter (active allocation racing) ──────
+
+  aws:
+    name: "Amazon Web Services (EC2 Elastic IP)"
+    cidr_key: "aws"
+    can_claim_specific_ip: true
+    severity: "high"
+    difficulty: "easy"
+    claim_cmd: "aws ec2 allocate-address --domain vpc --address {ip} --region {region}"
+    notes: >
+      AWS EIPs released from an EC2 instance return to the regional pool and can be
+      race-allocated by any AWS account. The --address flag lets you request the EXACT
+      previously-released IP, making targeted takeover possible without racing.
+    indicators:
+      ptr_patterns:
+        # ec2-1-2-3-4.compute-1.amazonaws.com  (us-east-1)
+        # ec2-1-2-3-4.us-west-2.compute.amazonaws.com
+        - '^ec2-[\d-]+\.(compute-1|[\w-]+\.compute)\.amazonaws\.com$'
+        # ip-1-2-3-4.ec2.internal  (private, not a public EIP but included for completeness)
+        - '^ip-[\d-]+\.ec2\.internal$'
+      ptr_release_patterns:
+        # No PTR or PTR that doesn't match aws patterns = likely released
+        []
+      response_headers:
+        # ELB / ALB in front of EC2
+        - "Server: awselb"
+        - "Via: 1.1 amazon"
+        - "x-amzn-RequestId"
+        - "x-amz-cf-id"      # CloudFront — NOT a raw EIP, suppress
+      dns_label_patterns: []
+      specific_ip_claim: true
+      anchor_ip_behavior: false
+      icmp_alive_means: "unknown"
+      no_ptr_means: "released"
+      tls_cert_check: true
+
+  azure:
+    name: "Microsoft Azure (Public IP Address)"
+    cidr_key: "azure"
+    can_claim_specific_ip: true
+    severity: "high"
+    difficulty: "easy"
+    claim_cmd: >
+      az network public-ip create --name poc-{ip} --resource-group {rg}
+      --location {region} --allocation-method Static --sku Standard
+    notes: >
+      Azure Public IPs of SKU Standard with static allocation return to the regional
+      pool on deletion.  The Azure portal and REST API do NOT support requesting a
+      specific IP — you race random allocations until the target appears.
+    indicators:
+      ptr_patterns:
+        # [name].[region].cloudapp.azure.com — still has a DNS label = still reserved
+        - '.*\.cloudapp\.azure\.com$'
+        - '.*\.cloudapp\.net$'           # legacy / sovereign clouds
+      ptr_release_patterns:
+        # No DNS label / generic reverse = released
+        []
+      response_headers:
+        - "Server: Microsoft-HTTPAPI/2.0"
+        - "Server: Microsoft-IIS"
+        - "X-Powered-By: ASP.NET"
+        - "x-ms-request-id"
+      dns_label_patterns:
+        # Any FQDN ending in cloudapp.azure.com is bound to a named PIP
+        - '.*\.cloudapp\.azure\.com$'
+      specific_ip_claim: false      # race-only, no direct claim API
+      anchor_ip_behavior: false
+      icmp_alive_means: "unknown"
+      no_ptr_means: "released"
+      tls_cert_check: true
+
+  gcp:
+    name: "Google Cloud Platform (Static External IP)"
+    cidr_key: "gcp"
+    can_claim_specific_ip: false
+    severity: "high"
+    difficulty: "easy"
+    claim_cmd: "gcloud compute addresses create poc --region={region} --project={project}"
+    notes: >
+      GCP static IPs released from a compute instance or forwarding rule return to
+      the regional pool. GCP does NOT let you request a specific previously-released
+      IP — race allocation is required. However, the GFE/GSE response headers are
+      a strong signal that the IP is still attached to a Google Load Balancer.
+    indicators:
+      ptr_patterns:
+        - '.*\.bc\.googleusercontent\.com$'
+        - '.*\.cloudsql\.goog$'
+      ptr_release_patterns: []
+      response_headers:
+        - "Server: GSE"
+        - "Server: Goldfish"
+        - "alt-svc: h3"
+        - "x-goog-"
+        - "via: 1.1 google"
+      dns_label_patterns:
+        - '.*\.bc\.googleusercontent\.com$'
+      specific_ip_claim: false
+      anchor_ip_behavior: false
+      icmp_alive_means: "unknown"
+      no_ptr_means: "unknown"
+      tls_cert_check: true
+
+  digitalocean:
+    name: "DigitalOcean (Reserved IP)"
+    cidr_key: "digitalocean"
+    can_claim_specific_ip: false
+    severity: "high"
+    difficulty: "easy"
+    claim_cmd: >
+      curl -X POST https://api.digitalocean.com/v2/reserved_ips
+      -H "Authorization: Bearer $DO_TOKEN"
+      -d '{"region":"{region}"}'
+    notes: >
+      DigitalOcean Reserved IPs (formerly Floating IPs) enter the per-datacenter pool
+      on deletion. No specific-IP claim is available — race allocation per region.
+      PTR reset to a static Quadranet-style address is a strong release signal.
+      "Anchor IP" behavior: ICMP may respond even when no droplet is assigned because
+      DO routes the anchor. An open port 22 however confirms a live droplet.
+    indicators:
+      ptr_patterns:
+        # Custom PTR set by owner = still reserved (manually configured)
+        - '^(?!.*quadranet)(?!.*static\.\d+).*$'   # any non-generic PTR
+      ptr_release_patterns:
+        # DO resets PTR to a generic Quadranet address on release
+        - '.*\.static\.quadranet\.com$'
+        - '^\d+\.\d+\.\d+\.\d+\.in-addr\.arpa$'    # bare IP PTR = no custom domain
+      response_headers:
+        - "x-do-"          # DigitalOcean-specific headers (CDN / App Platform)
+      dns_label_patterns: []
+      specific_ip_claim: false
+      anchor_ip_behavior: true     # ICMP alive does NOT confirm a live droplet
+      icmp_alive_means: "unknown"  # anchor routing keeps ICMP alive even without droplet
+      no_ptr_means: "released"
+      tls_cert_check: true
+
+  # ── Tier 2 — API-claimable, scanner reports but hunter not yet implemented ───
+
+  linode:
+    name: "Linode / Akamai Cloud (Reserved IP)"
+    cidr_key: null
+    can_claim_specific_ip: false
+    severity: "high"
+    difficulty: "easy"
+    claim_cmd: "POST https://api.linode.com/v4/networking/reserved/ips  (Bearer $LINODE_TOKEN)"
+    notes: >
+      Linode Reserved IPs return to the datacenter pool on deletion. Pool-based
+      only — no specific IP request. PTR reset to a generic linode.com address.
+    indicators:
+      ptr_patterns:
+        - '.*\.ip\.linodeusercontent\.com$'
+        - '.*\.members\.linode\.com$'
+      ptr_release_patterns:
+        - '^\d+-\d+-\d+-\d+\.ip\.linodeusercontent\.com$'
+      response_headers:
+        - "x-linode-"
+      dns_label_patterns: []
+      specific_ip_claim: false
+      anchor_ip_behavior: false
+      icmp_alive_means: "unknown"
+      no_ptr_means: "released"
+      tls_cert_check: true
+
+  vultr:
+    name: "Vultr (Reserved IP)"
+    cidr_key: null
+    can_claim_specific_ip: false
+    severity: "high"
+    difficulty: "easy"
+    claim_cmd: >
+      POST https://api.vultr.com/v2/reserved-ips
+      -d '{"region":"{region}","ip_type":"v4"}'
+    notes: >
+      Vultr released IPs enter a per-region pool and can be allocated by any Vultr
+      account. No specific-IP claim API available.
+    indicators:
+      ptr_patterns:
+        - '.*\.vultr\.com$'
+        - '.*\.constant\.com$'
+      ptr_release_patterns: []
+      response_headers:
+        - "x-vultr-"
+      dns_label_patterns: []
+      specific_ip_claim: false
+      anchor_ip_behavior: false
+      icmp_alive_means: "unknown"
+      no_ptr_means: "released"
+      tls_cert_check: true
+
+  hetzner:
+    name: "Hetzner Cloud (Floating IP / Primary IP)"
+    cidr_key: "hetzner"
+    can_claim_specific_ip: false
+    severity: "high"
+    difficulty: "easy"
+    claim_cmd: >
+      POST https://api.hetzner.cloud/v1/floating_ips
+      -d '{"type":"ipv4","home_location":"{location}"}'
+    notes: >
+      Hetzner Floating IPs are location-scoped and re-enter the pool on deletion.
+      Primary IPs (attached to servers) are also released on server deletion.
+    indicators:
+      ptr_patterns:
+        - '.*\.your-server\.de$'
+        - '.*\.hetzner\.com$'
+        - '.*\.static\.kabel-deutschland\.de$'
+      ptr_release_patterns: []
+      response_headers:
+        - "x-hetzner-"
+      dns_label_patterns: []
+      specific_ip_claim: false
+      anchor_ip_behavior: false
+      icmp_alive_means: "unknown"
+      no_ptr_means: "released"
+      tls_cert_check: true
+
+  ovh:
+    name: "OVHcloud (Failover IP / Additional IP)"
+    cidr_key: null
+    can_claim_specific_ip: true
+    severity: "medium"
+    difficulty: "medium"
+    claim_cmd: "POST https://api.ovh.com/1.0/ip  (type=failover, requires OVH account)"
+    notes: >
+      OVH Failover IPs are purchasable /32 blocks. Specific IPs may become available
+      for re-order after the previous owner cancels. Difficulty is medium because
+      re-ordering a specific IP is not always possible — pool availability varies.
+    indicators:
+      ptr_patterns:
+        - '.*\.ovh\.net$'
+        - '.*\.kimsufi\.com$'
+        - '.*\.so-you-start\.com$'
+      ptr_release_patterns: []
+      response_headers:
+        - "x-ovh-"
+      dns_label_patterns: []
+      specific_ip_claim: true
+      anchor_ip_behavior: false
+      icmp_alive_means: "unknown"
+      no_ptr_means: "released"
+      tls_cert_check: true
+
+  scaleway:
+    name: "Scaleway (Flexible IP)"
+    cidr_key: "scaleway"
+    can_claim_specific_ip: false
+    severity: "high"
+    difficulty: "easy"
+    claim_cmd: >
+      POST https://api.scaleway.com/flexible-ip/v1alpha1/zones/{zone}/fips
+    notes: >
+      Scaleway Flexible IPs return to the zone pool on detach/delete and can be
+      re-claimed by any Scaleway account in that zone.
+    indicators:
+      ptr_patterns:
+        - '.*\.rev\.scaleway\.com$'
+        - '.*\.poneytelecom\.eu$'   # older Scaleway RDNS
+      ptr_release_patterns: []
+      response_headers: []
+      dns_label_patterns: []
+      specific_ip_claim: false
+      anchor_ip_behavior: false
+      icmp_alive_means: "unknown"
+      no_ptr_means: "released"
+      tls_cert_check: true
+
+  oracle:
+    name: "Oracle Cloud Infrastructure (Reserved Public IP)"
+    cidr_key: "oracle"
+    can_claim_specific_ip: false
+    severity: "high"
+    difficulty: "easy"
+    claim_cmd: >
+      POST https://iaas.{region}.oraclecloud.com/20160918/publicIps
+      -d '{"compartmentId":"{compartment}","lifetime":"RESERVED"}'
+    notes: >
+      OCI Reserved Public IPs enter the tenancy pool on deletion and can be re-claimed
+      via any OCI project in the same region.
+    indicators:
+      ptr_patterns:
+        - '.*\.oraclecloud\.com$'
+        - '.*\.oracle\.com$'
+      ptr_release_patterns: []
+      response_headers:
+        - "x-oracle-"
+        - "opc-request-id"
+      dns_label_patterns: []
+      specific_ip_claim: false
+      anchor_ip_behavior: false
+      icmp_alive_means: "unknown"
+      no_ptr_means: "released"
+      tls_cert_check: true
+
+  ibm:
+    name: "IBM Cloud / SoftLayer (Portable IP)"
+    cidr_key: null
+    can_claim_specific_ip: false
+    severity: "medium"
+    difficulty: "medium"
+    claim_cmd: "IBM Cloud console: Networking > Subnets > Order Portable IPs"
+    notes: >
+      IBM/SoftLayer portable IPs require purchasing a subnet.  Specific IPs cannot
+      be guaranteed — pool-based assignment only. Difficulty is medium.
+    indicators:
+      ptr_patterns:
+        - '.*\.softlayer\.com$'
+        - '.*\.ibm\.com$'
+        - '.*\.networklayer\.com$'
+      ptr_release_patterns: []
+      response_headers:
+        - "x-ibm-"
+      dns_label_patterns: []
+      specific_ip_claim: false
+      anchor_ip_behavior: false
+      icmp_alive_means: "unknown"
+      no_ptr_means: "released"
+      tls_cert_check: true
+
+  alibaba:
+    name: "Alibaba Cloud (Elastic IP Address)"
+    cidr_key: "alibaba"
+    can_claim_specific_ip: false
+    severity: "medium"
+    difficulty: "medium"
+    claim_cmd: "AllocateEipAddress?Action=AllocateEipAddress&RegionId={region}"
+    notes: >
+      Alibaba EIPs return to the regional pool on release. No specific-IP claim.
+      Pool-based only — race allocation required.
+    indicators:
+      ptr_patterns:
+        - '.*\.aliyun\.com$'
+        - '.*\.alibaba\.com$'
+        - '.*\.aliyuncs\.com$'
+      ptr_release_patterns: []
+      response_headers:
+        - "x-alicdn-"
+        - "x-oss-"
+        - "via: .* AliyunOSS"
+      dns_label_patterns: []
+      specific_ip_claim: false
+      anchor_ip_behavior: false
+      icmp_alive_means: "unknown"
+      no_ptr_means: "released"
+      tls_cert_check: true
+
+  fly:
+    name: "Fly.io (Dedicated IPv4)"
+    cidr_key: null
+    can_claim_specific_ip: false
+    severity: "high"
+    difficulty: "easy"
+    claim_cmd: "fly ips allocate-v4 --app {app}"
+    notes: >
+      Fly.io dedicated IPs are drawn from an Anycast pool and re-enter it after
+      release. No specific-IP claim. Race allocation per region.
+    indicators:
+      ptr_patterns:
+        - '.*\.fly\.dev$'
+        - '.*\.fly\.io$'
+      ptr_release_patterns: []
+      response_headers:
+        - "fly-request-id"
+        - "Server: Fly"
+      dns_label_patterns: []
+      specific_ip_claim: false
+      anchor_ip_behavior: false
+      icmp_alive_means: "unknown"
+      no_ptr_means: "released"
+      tls_cert_check: true
+
+  equinix_metal:
+    name: "Equinix Metal / Packet (Elastic IP)"
+    cidr_key: null
+    can_claim_specific_ip: false
+    severity: "high"
+    difficulty: "easy"
+    claim_cmd: "POST https://api.equinix.com/metal/v1/projects/{project}/ips"
+    notes: >
+      Equinix Metal elastic IPs return to the facility pool on release.
+    indicators:
+      ptr_patterns:
+        - '.*\.packet\.net$'
+        - '.*\.equinix\.com$'
+      ptr_release_patterns: []
+      response_headers: []
+      dns_label_patterns: []
+      specific_ip_claim: false
+      anchor_ip_behavior: false
+      icmp_alive_means: "unknown"
+      no_ptr_means: "released"
+      tls_cert_check: true
+
+  upcloud:
+    name: "UpCloud (Floating IP)"
+    cidr_key: "upcloud"
+    can_claim_specific_ip: false
+    severity: "high"
+    difficulty: "easy"
+    claim_cmd: >
+      POST https://api.upcloud.com/1.3/ip_address
+      -d '{"ip_address":{"access":"public","family":"IPv4","zone":"{zone}"}}'
+    notes: >
+      UpCloud floating IPs are zone-scoped and can be re-assigned via API after
+      server deletion. Pool-based only.
+    indicators:
+      ptr_patterns:
+        - '.*\.upcloud\.host$'
+        - '.*\.fi\.servers\.upcloud\.com$'
+        - '.*\.de\.servers\.upcloud\.com$'
+      ptr_release_patterns: []
+      response_headers: []
+      dns_label_patterns: []
+      specific_ip_claim: false
+      anchor_ip_behavior: false
+      icmp_alive_means: "unknown"
+      no_ptr_means: "released"
+      tls_cert_check: true
+
+  # ── CDN / shared pools — limited takeover value ───────────────────────────
+
+  cloudflare:
+    name: "Cloudflare (Spectrum / Tunnel IP)"
+    cidr_key: null
+    can_claim_specific_ip: false
+    severity: "low"
+    difficulty: "hard"
+    claim_cmd: "Not individually claimable — Cloudflare manages IP assignment"
+    notes: >
+      Cloudflare IPs are shared CDN/proxy pool addresses. A dangling DNS record
+      pointing at a CF IP may show a CF default page but full content injection
+      is not possible without controlling the CF zone.
+    indicators:
+      ptr_patterns:
+        - '.*\.cloudflare\.com$'
+        - '.*\.1e100\.net$'
+      ptr_release_patterns: []
+      response_headers:
+        - "CF-RAY"
+        - "Server: cloudflare"
+        - "cf-cache-status"
+      dns_label_patterns: []
+      specific_ip_claim: false
+      anchor_ip_behavior: false
+      icmp_alive_means: "unknown"
+      no_ptr_means: "unknown"
+      tls_cert_check: false
+
+  fastly:
+    name: "Fastly CDN"
+    cidr_key: null
+    can_claim_specific_ip: false
+    severity: "low"
+    difficulty: "hard"
+    claim_cmd: "Not individually claimable — Fastly manages IP assignment"
+    notes: >
+      Shared CDN IPs. Dangling record may serve Fastly's 404 page but no
+      content injection is possible without controlling a Fastly service.
+    indicators:
+      ptr_patterns:
+        - '.*\.fastly\.net$'
+        - '.*\.fastlylb\.net$'
+      ptr_release_patterns: []
+      response_headers:
+        - "X-Served-By: cache"
+        - "Fastly-Debug"
+        - "x-cache: HIT"
+      dns_label_patterns: []
+      specific_ip_claim: false
+      anchor_ip_behavior: false
+      icmp_alive_means: "unknown"
+      no_ptr_means: "unknown"
+      tls_cert_check: false

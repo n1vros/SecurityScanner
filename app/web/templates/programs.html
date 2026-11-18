@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Programs - STOscanner{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">Programs</h1>
+            <p class="text-muted">Bug bounty programs and their scopes</p>
+        </div>
+    </div>
+
+    <!-- Programs Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>{{ total_count }} Program{% if total_count != 1 %}s{% endif %}</span>
+            <div>
+                {% if page > 1 %}
+                <a href="?page={{ page-1 }}&per_page={{ per_page }}" 
+                   class="btn btn-sm btn-outline-secondary me-2">Previous</a>
+                {% endif %}
+                {% if page < total_pages %}
+                <a href="?page={{ page+1 }}&per_page={{ per_page }}" 
+                   class="btn btn-sm btn-outline-secondary">Next</a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if programs %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Platform</th>
+                            <th>Scopes</th>
+                            <th>Subdomains</th>
+                            <th>Last Scan</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for program in programs %}
+                        <tr>
+                            <td>
+                                <a href="/web/program/{{ program.id }}" class="text-decoration-none">
+                                    <strong>{{ program.name }}</strong>
+                                </a>
+                                {% if program.url %}
+                                <br>
+                                <small><a href="{{ program.url }}" target="_blank" class="text-muted">{{ program.url|truncate(40) }}</a></small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ program.platform }}</span>
+                            </td>
+                            <td>{{ program.scope_count }}</td>
+                            <td>
+                                {{ program.total_subdomains }}
+                                {% if program.subdomain_counts %}
+                                <br>
+                                <small class="text-muted">
+                                    {% for state, count in program.subdomain_counts.items() %}
+                                    <span class="badge state-badge state-{{ state }} me-1">{{ count }}</span>
+                                    {% endfor %}
+                                </small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {% if program.last_scan_at %}
+                                    {{ program.last_scan_at[:16]|replace('T', ' ') }}
+                                    {% else %}
+                                    Never
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td>
+                                {% if program.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="text-muted mb-2">No programs found</div>
+                <small>Add programs using the CLI: <code>stoscanner add-program</code></small>
+            </div>
+            {% endif %}
+        </div>
+        {% if total_pages > 1 %}
+        <div class="card-footer">
+            <nav aria-label="Programs pagination">
+                <ul class="pagination pagination-sm mb-0 justify-content-center">
+                    {% if page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page-1 }}&per_page={{ per_page }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for p in range(1, total_pages + 1) %}
+                        {% if p == page %}
+                        <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+                        {% elif p >= page-2 and p <= page+2 %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ p }}&per_page={{ per_page }}">{{ p }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page+1 }}&per_page={{ per_page }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

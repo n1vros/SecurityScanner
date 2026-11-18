@@ -1,0 +1,72 @@
+[
+  {
+    "name": "Tuple",
+    "platform": "federacy",
+    "scopes": [
+      "staging.tuple.app",
+      "tuple.app",
+      "production.tuple.app"
+    ]
+  },
+  {
+    "name": "Belvo Technologies Inc.",
+    "platform": "federacy",
+    "scopes": [
+      "dashboard.belvo.com",
+      "api.belvo.com",
+      "belvo.com",
+      "sandbox.belvo.com",
+      "development.belvo.com",
+      "identity.belvo.com",
+      "portal.sandbox.directdebit.belvo.com",
+      "api.sandbox.directdebit.belvo.com"
+    ]
+  },
+  {
+    "name": "Check",
+    "platform": "federacy",
+    "scopes": [
+      "sandbox.checkhq.com",
+      "console.checkhq.com",
+      "onboard.checkhq.com"
+    ]
+  },
+  {
+    "name": "delight-im",
+    "platform": "federacy",
+    "scopes": [
+      "briefe.io",
+      "moviecontentfilter.com",
+      "undoze.com",
+      "delight.im"
+    ]
+  },
+  {
+    "name": "RenoFi",
+    "platform": "federacy",
+    "scopes": [
+      "renofi.com",
+      "qualify.renofi.com",
+      "login.renofi.com",
+      "secure.renofi.com",
+      "calculator.renofi.com"
+    ]
+  },
+  {
+    "name": "Upfort",
+    "platform": "federacy",
+    "scopes": [
+      "app.upfort.com",
+      "www.upfort.com",
+      "backend-v2.us.prod.api.upfort.com",
+      "dashboard.upfort.com"
+    ]
+  },
+  {
+    "name": "Federacy",
+    "platform": "federacy",
+    "scopes": [
+      "www.federacy.com"
+    ]
+  }
+]

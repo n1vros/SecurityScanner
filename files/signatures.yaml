@@ -1,0 +1,1566 @@
+signatures:
+
+  - provider: github
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.github\.io$
+      - \.github\.com$
+    http_patterns:
+      - {pattern: "There isn't a GitHub Pages site here", weight: 60}
+      - {pattern: "For root URLs.*you must provide an index\\.html file", weight: 50}
+      - {pattern: "Project Not Found", weight: 45}
+    header_patterns:
+      - {header: server, pattern: "GitHub\\.com", weight: 40}
+      - {header: x-github-request-id, pattern: .+, weight: 50}
+
+  - provider: heroku
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.herokuapp\.com$
+      - \.herokussl\.com$
+      - \.herokudns\.com$
+    http_patterns:
+      - {pattern: "No such app", weight: 60}
+      - {pattern: "There's nothing here, yet", weight: 55}
+      - {pattern: "herokucdn\\.com/error-pages/no-such-app\\.html", weight: 65}
+
+  - provider: aws_s3
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.s3\.amazonaws\.com$
+      - \.s3-website.*\.amazonaws\.com$
+      - \.s3\.[^.]+\.amazonaws\.com$
+    http_patterns:
+      - {pattern: "NoSuchBucket", weight: 65}
+      - {pattern: "The specified bucket does not exist", weight: 65}
+      - {pattern: "<Code>NoSuchBucket</Code>", weight: 70}
+      - {pattern: "BucketNotFound", weight: 65}
+      - { pattern: "NoSuchWebsiteConfiguration", weight: -100 }
+      - { pattern: "AccessDenied", weight: -100 }
+      - { pattern: "Access Denied", weight: -100 }
+    header_patterns:
+      - {header: server, pattern: AmazonS3, weight: 60}
+
+  - provider: aws_elastic_beanstalk
+    severity: High
+    claimable: true
+    nxdomain_required: true
+    cname_patterns:
+      - \.elasticbeanstalk\.com$
+    http_patterns:
+      - {pattern: "There is no application configured at that URL", weight: 65}
+
+  - provider: azure
+    severity: High
+    claimable: true
+    nxdomain_required: true
+    cname_patterns:
+      - \.azurewebsites\.net$
+      - \.cloudapp\.net$
+      - \.cloudapp\.azure\.com$
+      - \.trafficmanager\.net$
+      - \.blob\.core\.windows\.net$
+      - \.azurehdinsight\.net$
+      - \.azurecontainer\.io$
+      - \.database\.windows\.net$
+      - \.azuredatalakestore\.net$
+      - \.search\.windows\.net$
+      - \.redis\.cache\.windows\.net$
+      - \.servicebus\.windows\.net$
+
+  - provider: google_app_engine
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.appspot\.com$
+
+  - provider: digitalocean_app
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.ondigitalocean\.app$
+    http_patterns:
+      - {pattern: "domain is not configured", weight: 55}
+
+  - provider: digitalocean_spaces
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.digitaloceanspaces\.com$
+    http_patterns:
+      - {pattern: "NoSuchBucket", weight: 65}
+      - {pattern: "The specified bucket does not exist", weight: 65}
+
+  - provider: netlify
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.netlify\.com$
+      - \.netlify\.app$
+    http_patterns:
+      - {pattern: "Not Found - Request ID", weight: 65}
+    header_patterns:
+      - {header: server, pattern: Netlify, weight: 25}
+      - {header: x-nf-request-id, pattern: .+, weight: 30}
+
+  - provider: vercel
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.vercel\.app$
+      - \.now\.sh$
+      - \.vercel-dns\.com$
+      - \.zeit\.co$
+    http_patterns:
+      - {pattern: "The deployment could not be found", weight: 65}
+      - {pattern: "404: NOT_FOUND", weight: 60}
+      - {pattern: "DEPLOYMENT_NOT_FOUND", weight: 65}
+      - {pattern: "Verification failed", weight: 60 }
+
+  - provider: render
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.onrender\.com$
+    http_patterns:
+      - {pattern: "There is no app configured at that URL", weight: 65}
+
+  - provider: railway
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.railway\.app$
+      - \.up\.railway\.app$
+    http_patterns:
+      - {pattern: "Application not found", weight: 60}
+      - {pattern: "No application found at this address", weight: 60}
+
+  - provider: openshift
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.openshift\.io$
+      - \.openshiftapps\.com$
+
+  - provider: ngrok
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.ngrok\.io$
+      - \.ngrok-free\.app$
+      - \.ngrok\.app$
+    http_patterns:
+      - {pattern: "Tunnel .+ not found", weight: 65}
+      - {pattern: "ngrok error", weight: 55}
+
+  - provider: pantheon
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.pantheonsite\.io$
+      - \.pantheon\.io$
+    http_patterns:
+      - {pattern: "404 error unknown site!", weight: 65}
+      - {pattern: "The site you are looking for could not be found.", weight: 65}
+      - {pattern: "The gods are wise, but do not know of the site which you seek", weight: 65}
+
+  - provider: surge
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.surge\.sh$
+      - \.na-west1\.surge\.sh$
+    http_patterns:
+      - {pattern: "project not found", weight: 65}
+      - {pattern: "repository not found", weight: 60}
+
+  - provider: discourse
+    severity: High
+    claimable: true
+    nxdomain_required: true
+    cname_patterns:
+      - \.trydiscourse\.com$
+
+  - provider: gemfury
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.furyns\.com$
+    http_patterns:
+      - {pattern: "404: This page could not be found", weight: 65}
+
+  - provider: marketo
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.mktoweb\.com$
+      - \.mktossl\.com$
+
+  - provider: pardot
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.pardot\.com$
+    http_patterns:
+      - {pattern: "Oops! We couldn't find that page", weight: 55}
+
+  - provider: activecampaign
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.activehosted\.com$
+
+  - provider: getresponse
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.gr8\.com$
+      - \.grwebsite\.com$
+    http_patterns:
+      - {pattern: "With GetResponse Landing Pages, lead generation has never been easier", weight: 60}
+
+  - provider: leadpages
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.leadpages\.net$
+      - \.lpages\.co$
+      - \.lpcustomdomains\.com$
+    http_patterns:
+      - {pattern: "This page has been removed or doesn't exist", weight: 65}
+      - {pattern: "Sorry, this page is no longer available", weight: 60}
+
+  - provider: pagewiz
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.pagewiz\.net$
+    http_patterns:
+      - {pattern: "The page you're looking for isn't available at this address", weight: 65}
+
+  - provider: launchrock
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.launchrock\.com$
+    http_patterns:
+      - {pattern: "It looks like you may have taken a wrong turn somewhere", weight: 65}
+
+  - provider: wishpond
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.wishpond\.com$
+
+  - provider: clickfunnels
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.clickfunnels\.com$
+      - \.myfunnels\.io$
+    http_patterns:
+      - {pattern: "Please contact us to get this fixed", weight: 55}
+
+  - provider: convertkit
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.convertkit\.com$
+      - \.ck-page\.com$
+    http_patterns:
+      - {pattern: "Oh no, the page you are looking for is gone", weight: 65}
+
+  - provider: landingi
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.cname\.landingi\.com$
+
+  - provider: campaignmonitor
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.cname\.createsend\.com$
+      - \.cname\.campaignmonitor\.com$
+    http_patterns:
+      - {pattern: "Trying to access your account?", weight: 60}
+      - {pattern: "Double-check the URL", weight: 50}
+      - {pattern: "It looks like this page does not exist", weight: 50}
+
+  - provider: wix
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.wixdns\.net$
+    http_patterns:
+      - {pattern: "Looks Like This Domain Isn't Connected To A Website Yet!", weight: 65}
+      - {pattern: "No matching site found", weight: 55}
+      - {pattern: "This site is no longer active", weight: 55}
+      - {pattern: "Error ConnectYourDomain occurred", weight: 70}
+      - {pattern: "wixErrorPagesApp", weight: 70}
+
+  - provider: freshservice
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.freshservice\.com$
+    http_patterns:
+      - {pattern: "Maybe this is still fresh!", weight: 70}
+      - {pattern: "You can claim it now", weight: 65}
+
+  - provider: helpscout
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.helpscoutdocs\.com$
+    http_patterns:
+      - {pattern: "No settings were found for this company", weight: 70}
+
+  - provider: helpdocs
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.helpdocs\.io$
+    http_patterns:
+      - {pattern: "You've tried to access an account/page that does not exist", weight: 70}
+      - {pattern: "We could not find this HelpDocs account", weight: 60}
+
+  - provider: helpjuice
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.helpjuice\.com$
+    http_patterns:
+      - {pattern: "We could not find what you're looking for", weight: 60}
+      - {pattern: "No helpdesk found", weight: 65}
+
+  - provider: helprace
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.helprace\.com$
+    http_patterns:
+      - {pattern: "Your account is currently suspended", weight: 55}
+
+  - provider: groove
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.groovehq\.com$
+
+  - provider: kayako
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.kayako\.com$
+    http_patterns:
+      - {pattern: "There is no helpdesk available at this URL", weight: 70}
+
+  - provider: supporthero
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.supporthero\.io$
+    http_patterns:
+      - {pattern: "There is no helpdesk at this address", weight: 70}
+
+  - provider: document360
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.document360\.io$
+
+  - provider: readthedocs
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.readthedocs\.io$
+      - \.readthedocs\.org$
+    http_patterns:
+      - {pattern: "unknown to Read the Docs", weight: 70}
+      - {pattern: "The link you have followed or the URL that you entered does not exist", weight: 65}
+      - {pattern: "This domain is not configured", weight: 55}
+
+  - provider: intercom
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.intercom\.help$
+      - \.custom\.intercom\.help$
+    http_patterns:
+      - {pattern: "reserved but not yet claimed", weight: 70}
+      - {pattern: "Uh oh. That page doesn't exist.", weight: 65}
+
+  - provider: readme
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.readme\.io$
+    http_patterns:
+      - {pattern: "Project doesnt exist", weight: 70}
+      - {pattern: "The creators of this project are still working on making everything perfect", weight: 65}
+
+  - provider: bitbucket
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.bitbucket\.io$
+    http_patterns:
+      - {pattern: "Repository not found", weight: 65}
+
+  - provider: launchdarkly
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.launchdarkly\.com$
+    http_patterns:
+      - {pattern: "There is no account here with that URL", weight: 70}
+      - { pattern: "The page you were looking for doesn't exist", weight: 70 }
+      - { pattern: "Not Found", weight: 70 }
+
+  - provider: smartling
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.smartling\.com$
+    http_patterns:
+      - {pattern: "Domain is not configured", weight: 60}
+
+  - provider: statusio
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.status\.io$
+
+  - provider: youtrack
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.myjetbrains\.com$
+      - \.youtrack\.cloud$
+    http_patterns:
+      - {pattern: "is not a registered InCloud YouTrack", weight: 70}
+      - {pattern: "No such YouTrack instance", weight: 65}
+
+  - provider: apigee
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.apigee\.net$
+      - \.apigee\.io$
+    http_patterns:
+      - {pattern: "No application is associated with this URL", weight: 70}
+
+  - provider: pingdom
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.stats\.pingdom\.com$
+    http_patterns:
+      - {pattern: "Sorry, couldn't find the status page", weight: 70}
+      - {pattern: "This public report page has not been activated", weight: 65}
+
+  - provider: uptimerobot
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.stats\.uptimerobot\.com$
+    http_patterns:
+      - {pattern: "page not found", weight: 50}
+
+  - provider: gitbook
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.gitbook\.io$
+    http_patterns:
+      - {pattern: "This book has been unpublished", weight: 70}
+
+  - provider: shopify
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.myshopify\.com$
+      - \.shopify\.com$
+    http_patterns:
+      - {pattern: "Sorry, this shop is currently unavailable", weight: 65}
+      - {pattern: "Sorry, this store is currently unavailable", weight: 65}
+      - {pattern: "This shop is currently unavailable", weight: 65}
+      - {pattern: 'To finish setting up your new web address, go to your domain settings, click "Connect existing domain"', weight: 70}
+    header_patterns:
+      - {header: x-shopid, pattern: .+, weight: 60}
+
+  - provider: bigcartel
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.bigcartel\.com$
+    http_patterns:
+      - {pattern: "This shop is not currently available", weight: 65}
+
+  - provider: ecwid
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.ecwid\.com$
+    http_patterns:
+      - {pattern: "This store is currently unavailable", weight: 65}
+
+  - provider: volusion
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.volusion\.com$
+    http_patterns:
+      - {pattern: "This store is not available for browsing", weight: 65}
+
+  - provider: threedcart
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.3dcartstores\.com$
+      - \.shift4shop\.com$
+    http_patterns:
+      - {pattern: "This store is not available for browsing at this time", weight: 65}
+
+  - provider: tictail
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.tictail\.com$
+    http_patterns:
+      - {pattern: "Building a brand new tictail", weight: 65}
+
+  - provider: vend
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.vendhq\.com$
+    http_patterns:
+      - {pattern: "Looks like you've traveled too far into cyberspace", weight: 65}
+
+  - provider: wordpress
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.wordpress\.com$
+    http_patterns:
+      - {pattern: "Do you want to register", weight: 60}
+      - {pattern: "No site here", weight: 55}
+
+  - provider: webflow
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.webflow\.io$
+      - \.proxy\.webflow\.com$
+
+  - provider: ghost
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.ghost\.io$
+    http_patterns:
+      - {pattern: "The thing you were looking for is no longer here", weight: 70}
+      - {pattern: "Site unavailable", weight: 55}
+      - {pattern: "Failed to resolve DNS path for this host", weight: 65}
+
+  - provider: tumblr
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.tumblr\.com$
+    http_patterns:
+      - {pattern: "Whatever you were looking for doesn't currently exist at this address", weight: 65}
+
+  - provider: strikingly
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.mystrikingly\.com$
+      - \.s\.strikinglydns\.com$
+    http_patterns:
+      - {pattern: "PAGE NOT FOUND", weight: 60}
+      - {pattern: "But if you're looking to build your own website", weight: 40}
+
+  - provider: typeform
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.typeform\.com$
+    http_patterns:
+      - {pattern: "Oops! We can't find this page", weight: 40}
+
+  - provider: wufoo
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.wufoo\.com$
+    http_patterns:
+      - {pattern: "Profile not found", weight: 65}
+      - {pattern: "Powered by Wufoo", weight: 30}
+
+  - provider: jotform
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.jotform\.com$
+    http_patterns:
+      - {pattern: "This form is no longer available", weight: 65}
+      - {pattern: "No form found", weight: 60}
+
+  - provider: formstack
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.formstack\.com$
+    http_patterns:
+      - {pattern: "Oops! We could not locate your form", weight: 70}
+
+  - provider: notion
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.notion\.site$
+      - \.notion\.so$
+
+  - provider: productboard
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.productboard\.com$
+    http_patterns:
+      - {pattern: "Portal not found", weight: 65}
+      - {pattern: "The portal you requested was not found", weight: 65}
+
+  - provider: podia
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.podia\.com$
+    http_patterns:
+      - {pattern: "Page not found - This page does not exist", weight: 65}
+
+  - provider: thinkific
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.thinkific\.com$
+
+  - provider: kajabi
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.kajabi\.com$
+      - \.endpoint\.mykajabi\.com$
+
+  - provider: uberflip
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.uberflip\.com$
+    http_patterns:
+      - {pattern: "Non-hub domain, The URL you've accessed does not provide a hub", weight: 70}
+      - {pattern: "The URL you've accessed does not provide a hub", weight: 65}
+
+  - provider: teamwork
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.teamwork\.com$
+    http_patterns:
+      - {pattern: "Oops - We didn't find your site", weight: 65}
+      - {pattern: "We couldn't find this Teamwork site", weight: 65}
+
+  - provider: proposify
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.proposify\.biz$
+      - \.proposify\.com$
+    http_patterns:
+      - {pattern: "There is no portal here", weight: 65}
+      - {pattern: "The proposal you're looking for is not available", weight: 65}
+
+  - provider: canny
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.canny\.io$
+    http_patterns:
+      - {pattern: "There is no such company", weight: 70}
+      - {pattern: "Company Not Found", weight: 65}
+
+  - provider: smugmug
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.smugmug\.com$
+
+  - provider: surveygizmo
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.surveygizmo\.com$
+    http_patterns:
+      - {pattern: "There is no account associated with this subdomain", weight: 70}
+
+  - provider: surveysparrow
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.surveysparrow\.com$
+    http_patterns:
+      - {pattern: "Account not found", weight: 60}
+
+  - provider: shortio
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.short\.io$
+      - \.cname\.short\.io$
+    http_patterns:
+      - {pattern: "Link does not exist", weight: 75}
+      - {pattern: "This domain is not registered with Short\\.io", weight: 70}
+
+  - provider: simplebooklet
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.simplebooklet\.com$
+    http_patterns:
+      - {pattern: "We can't find this simplebooklet", weight: 70}
+
+  - provider: brightcove
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.brightcove\.com$
+      - \.bcvp0rtal\.com$
+    http_patterns:
+      - {pattern: "Page does not exist", weight: 55}
+      - {pattern: "This video portal is not configured", weight: 65}
+
+  - provider: mashery
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.mashery\.com$
+    http_patterns:
+      - {pattern: "Unrecognized domain", weight: 70}
+      - {pattern: "Sorry! Something went wrong!", weight: 50}
+
+  - provider: frontify
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.frontify\.com$
+    http_patterns:
+      - {pattern: "404 - Page Not Found", weight: 50}
+
+  - provider: agilecrm
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.agilecrm\.com$
+    http_patterns:
+      - {pattern: "Sorry, this page is no longer available", weight: 55}
+
+  - provider: aha
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.ideas\.aha\.io$
+    http_patterns:
+      - {pattern: "There is no portal here", weight: 70}
+
+  - provider: airee
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.cdn\.airee\.ru$
+    http_patterns:
+      - {pattern: "Ошибка 402. Сервис Айри.рф не оплачен", weight: 75}
+      - {pattern: "Ошибка: домен не подключён", weight: 70}
+      - {pattern: "Error: domain not connected", weight: 70}
+
+  - provider: anima
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.animaapp\.io$
+    http_patterns:
+      - {pattern: "The page you were looking for does not exist", weight: 65}
+      - {pattern: "This page is not longer published", weight: 65}
+
+  - provider: announcekit
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.cname\.announcekit\.app$
+    http_patterns:
+      - {pattern: "We could not find the widget", weight: 70}
+
+  - provider: aftership
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.aftership\.com$
+    http_patterns:
+      - {pattern: "Oops\\. We couldn't find that page", weight: 60}
+
+  - provider: hatenablog
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.hatenablog\.com$
+    http_patterns:
+      - {pattern: "404 Blog is not found", weight: 70}
+
+  - provider: smartjobboard
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.smartjobboard\.com$
+      - \.mysmartjobboard\.com$
+      - 52\.16\.160\.97
+    http_patterns:
+      - {pattern: "This job board website is either expired or its domain name is invalid", weight: 75}
+      - {pattern: "This job board website is either expired or its domain name is not configured", weight: 75}
+
+  - provider: spot
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.spotinst\.com$
+    http_patterns:
+      - {pattern: "This spot does not exist", weight: 70}
+
+  - provider: tilda
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.tilda\.ws$
+    http_patterns:
+      - {pattern: "Please go to the site settings and put the domain name in the Domain tab", weight: 70}
+      - {pattern: "Domain not found", weight: 55}
+      - {pattern: "Please renew your subscription", weight: 45}
+      - {pattern: "Please renew your plan", weight: 45}
+
+  - provider: cargo
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.cargocollective\.com$
+    http_patterns:
+      - {pattern: "If you're moving your domain away from Cargo", weight: 70}
+
+  - provider: tave
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.tave\.com$
+    http_patterns:
+      - {pattern: "This domain hasn't been claimed yet", weight: 70}
+
+  - provider: klaviyo
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.klaviyodns\.com$
+    http_patterns:
+      - { pattern: "This domain is not configured for this account", weight: 75 }
+      - { pattern: "Verification failed", weight: 40 }
+
+  - provider: worksites
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.worksites\.net$
+      - 69\.164\.223\.206
+    http_patterns:
+      - { pattern: "Hello! Sorry, but the website you’re looking for doesn’t exist.", weight: 70 }
+
+  - provider: substack
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.substack-custom-domains\.com$
+    http_patterns:
+      - { pattern: "Domain not configured", weight: 65 }
+      - { pattern: "No such app", weight: 60 }
+      - { pattern: "There isn't a Substack publication here", weight: 70 }
+
+  - provider: gohire
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.gohire\.io$
+    http_patterns:
+      - { pattern: "the website you’re looking for doesn’t exist", weight: 70 }
+      - { pattern: "You may have followed an invalid link, or the job you are looking for has been archived", weight: 90 }
+  - provider: flywheel
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.getflywheel\.com$
+      - \.flywheelsites\.com$
+    http_patterns:
+      - {pattern: "We're sorry, you've landed on a page that is hosted by Flywheel", weight: 70}
+      - {pattern: "Oops! We couldn't find that site.", weight: 65}
+
+  - provider: super_so
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.super\.so$
+      - \.cname\.super\.so$
+    http_patterns:
+      - {pattern: "This page doesn't seem to exist.", weight: 70}
+
+  - provider: flexbe
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.flexbe\.com$
+    http_patterns:
+      - {pattern: "Domain isn't configured", weight: 65}
+      - {pattern: "This page is not activated", weight: 65}
+
+  - provider: jazzhr
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.applytojob\.com$
+      - \.jazz\.co$
+    http_patterns:
+      - {pattern: "This account no longer active", weight: 70}
+
+  - provider: sprintful
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.sprintful\.com$
+    http_patterns:
+      - {pattern: "This domain name does not have a default page configured", weight: 70}
+
+  - provider: cloudflare_pages
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.pages\.dev$
+    http_patterns:
+      - { pattern: "This site is not configured", weight: 65 }
+      - { pattern: "No project found", weight: 60 }
+
+  - provider: carrd
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.carrd\.co$
+    http_patterns:
+      - { pattern: "This site was not found", weight: 65 }
+      - { pattern: "No Carrd site found", weight: 65 }
+
+  - provider: framer
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.framer\.website$
+      - \.framer\.app$
+      - \.cname\.framer\.com$
+    http_patterns:
+      - { pattern: "Page Not Found", weight: 60 }
+      - { pattern: "This site does not exist", weight: 65 }
+      - { pattern: "Published site not found", weight: 70 }
+
+  - provider: duda
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.duda\.co$
+    http_patterns:
+      - { pattern: "This website is not yet published", weight: 65 }
+
+  - provider: stoplight
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.stoplight\.io$
+    http_patterns:
+      - { pattern: "Project not found", weight: 65 }
+      - { pattern: "API workspace not found", weight: 65 }
+
+  - provider: slate
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.slate\.page$
+    http_patterns:
+      - { pattern: "Page not found", weight: 60 }
+
+  - provider: landen
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.landen\.co$
+    http_patterns:
+      - { pattern: "This page isn't available", weight: 65 }
+      - { pattern: "The site you're looking for does not exist", weight: 65 }
+
+  - provider: helpshift
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.helpshift\.com$
+    http_patterns:
+      - { pattern: "Domain not configured", weight: 65 }
+      - { pattern: "Help center not found", weight: 65 }
+
+  - provider: rebrandly
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.rebrandly\.com$
+    http_patterns:
+      - { pattern: "Link not found", weight: 65 }
+      - { pattern: "This link does not exist", weight: 65 }
+
+  - provider: t2m
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.t2m\.io$
+    http_patterns:
+      - { pattern: "Invalid short URL", weight: 65 }
+      - { pattern: "Link not found", weight: 60 }
+
+  - provider: tribe
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.tribe\.so$
+    http_patterns:
+      - { pattern: "Community not found", weight: 65 }
+      - { pattern: "This community does not exist", weight: 65 }
+
+  - provider: circle
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.circle\.so$
+    http_patterns:
+      - { pattern: "Community not found", weight: 65 }
+      - { pattern: "This community does not exist", weight: 65 }
+
+  - provider: metabase
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.metabaseapp\.com$
+    http_patterns:
+      - { pattern: "Metabase instance not found", weight: 65 }
+      - { pattern: "No Metabase instance configured", weight: 65 }
+  - provider: glitch
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.glitch\.me$
+    http_patterns:
+      - { pattern: "Project not found", weight: 65 }
+
+  - provider: repl
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.repl\.co$
+    http_patterns:
+      - { pattern: "Repl not found", weight: 65 }
+
+  - provider: 000webhost
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.000webhostapp\.com$
+    http_patterns:
+      - { pattern: "Website is not configured", weight: 65 }
+
+  - provider: weebly
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.weebly\.com$
+      - \.weeblysite\.com$
+    http_patterns:
+      - { pattern: "This site is not published", weight: 65 }
+
+  - provider: cloudflare_workers
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.workers\.dev$
+    http_patterns:
+      - { pattern: "Worker not found", weight: 65 }
+
+  - provider: cloudflare_r2
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.r2\.dev$
+    http_patterns:
+      - { pattern: "No such bucket", weight: 65 }
+
+  - provider: ipfs_gateway
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.ipfs\.io$
+      - \.dweb\.link$
+
+  - provider: blogspot
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.blogspot\.com$
+    http_patterns:
+      - { pattern: "Blog has been removed", weight: 65 }
+
+  - provider: square_space_site
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.square\.site$
+    http_patterns:
+      - { pattern: "No such site", weight: 65 }
+
+  - provider: bubble
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.bubbleapps\.io$
+    http_patterns:
+      - { pattern: "Application not found", weight: 65 }
+
+  - provider: datocms
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.datocms\.com$
+    http_patterns:
+      - { pattern: "Project not found", weight: 65 }
+
+  - provider: branch
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.branch\.io$
+
+  - provider: betteruptime
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.betteruptime\.com$
+    http_patterns:
+      - { pattern: "Status page not found", weight: 65 }
+
+  - provider: cloudapp
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.getcloudapp\.com$
+    http_patterns:
+      - { pattern: "Page not found", weight: 65 }
+
+  - provider: brandpad
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.brandpad\.io$
+
+  - provider: easyredir
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.easyredir\.com$
+    http_patterns:
+      - { pattern: "Domain not configured", weight: 65 }
+
+  - provider: appery
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.appery\.io$
+    http_patterns:
+      - { pattern: "Application not found", weight: 65 }
+
+  - provider: codeberg_pages
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.codeberg\.page$
+
+  - provider: readme_docs
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.rdmd\.io$
+
+  - provider: bitly_custom
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.bitly\.com$
+
+  - provider: zendesk
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.zendesk\.com$
+    http_patterns:
+      - {pattern: "Help Center Closed", weight: 65}
+      - {pattern: "Oops! This page is no longer active", weight: 65}
+
+  - provider: uservoice
+    severity: Medium
+    claimable: true
+    nxdomain_required: false
+    cname_patterns:
+      - \.uservoice\.com$
+    http_patterns:
+      - {pattern: "This UserVoice subdomain is currently available", weight: 75}
+
+  - provider: clevercloud
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.cleverapps\.io$
+    http_patterns:
+      - {pattern: "There is no application here", weight: 65}
+      - {pattern: "No app configured at that URL", weight: 60}
+
+  - provider: aws_amplify
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.amplifyapp\.com$
+    http_patterns:
+      - {pattern: "NoSuchApp", weight: 65}
+      - {pattern: "App does not exist", weight: 60}
+
+  - provider: meteor
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.meteor\.com$
+      - \.meteorapp\.com$
+    http_patterns:
+      - {pattern: "There's no site here", weight: 60}
+      - {pattern: "404 Not Found", weight: 40}
+
+  - provider: google_app_engine_appspot
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.uc\.r\.appspot\.com$
+      - \.nw\.r\.appspot\.com$
+    http_patterns:
+      - {pattern: "Error: Server Error", weight: 35}
+      - {pattern: "The requested URL was not found on this server", weight: 40}
+
+  - provider: aws_apigateway
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.execute-api\.amazonaws\.com$
+      - \.execute-api\.us-east-1\.amazonaws\.com$
+    http_patterns:
+      - {pattern: '{"message":"Forbidden"}', weight: 30}
+
+  - provider: hashnode
+    severity: High
+    claimable: true
+    cname_patterns:
+      - \.hashnode\.dev$
+      - \.hashnode\.network$
+    http_patterns:
+      - { pattern: "This Hashnode blog does not exist", weight: 70 }
+      - { pattern: "Blog not found", weight: 60 }
+      - { pattern: "This blog has been removed", weight: 65 }
+
+  - provider: zeroheight
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.zeroheight\.com$
+    http_patterns:
+      - { pattern: "This page doesn't exist", weight: 60 }
+      - { pattern: "No styleguide found", weight: 65 }
+
+  - provider: paperform
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.paperform\.co$
+    http_patterns:
+      - { pattern: "Form not found", weight: 65 }
+      - { pattern: "This form does not exist", weight: 65 }
+
+  - provider: typepad
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.typepad\.com$
+    http_patterns:
+      - { pattern: "Not Found", weight: 40 }
+      - { pattern: "This blog is not hosted by TypePad", weight: 70 }
+      - { pattern: "No Such Blog", weight: 65 }
+
+  - provider: outseta
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.outseta\.com$
+    http_patterns:
+      - { pattern: "Account not found", weight: 60 }
+      - { pattern: "This account does not exist", weight: 65 }
+
+  - provider: strikingly_global
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.strikinglydns\.com$
+    http_patterns:
+      - { pattern: "PAGE NOT FOUND", weight: 60 }
+      - { pattern: "But if you're looking to build your own website", weight: 40 }
+
+  - provider: gatsby_cloud
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.gatsbyjs\.io$
+      - \.gtsb\.io$
+    http_patterns:
+      - { pattern: "Preview build not found", weight: 65 }
+      - { pattern: "Site not found", weight: 55 }
+
+  - provider: netlify_functions
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.netlify\.live$
+    http_patterns:
+      - { pattern: "Not Found - Request ID", weight: 65 }
+    header_patterns:
+      - { header: x-nf-request-id, pattern: .+, weight: 30 }
+
+  - provider: gitea_pages
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.gitea\.io$
+    http_patterns:
+      - { pattern: "The page you are looking for does not exist", weight: 60 }
+
+  - provider: aws_lightsail
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.lightsail\.com$
+      - \.lightsaildomains\.com$
+    http_patterns:
+      - { pattern: "No instance found", weight: 60 }
+
+  - provider: netlify_legacy
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.netlify\.com$
+    http_patterns:
+      - { pattern: "Not Found - Request ID", weight: 65 }
+    header_patterns:
+      - { header: server, pattern: Netlify, weight: 25 }
+
+  - provider: readme_io_v2
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.readme\.com$
+    http_patterns:
+      - { pattern: "Project doesnt exist", weight: 70 }
+      - { pattern: "The creators of this project are still working on making everything perfect", weight: 65 }
+
+  - provider: kinsta
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.kinsta\.cloud$
+      - \.kinsta\.app$
+    http_patterns:
+      - { pattern: "No Site For Domain", weight: 65 }
+      - { pattern: "This Kinsta site is not accessible", weight: 65 }
+
+  - provider: teachable
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.teachable\.com$
+      - \.teachablecdn\.com$
+    http_patterns:
+      - { pattern: "Oops! We can't find this page", weight: 55 }
+      - { pattern: "This school does not exist", weight: 65 }
+
+  - provider: squarespace_legacy
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.squarespace\.com$
+    http_patterns:
+      - { pattern: "No Such Account", weight: 65 }
+      - { pattern: "This website is coming soon", weight: 35 }
+
+  - provider: fastspring
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.onfastspring\.com$
+      - \.fastspring\.com$
+    http_patterns:
+      - { pattern: "This store is not available at the moment", weight: 60 }
+      - { pattern: "This account is inactive", weight: 60 }
+
+  - provider: pagecloud
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.pagecloud\.com$
+    http_patterns:
+      - { pattern: "This site has been removed", weight: 65 }
+      - { pattern: "No site found at this address", weight: 65 }
+
+  - provider: instapage
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.instapage\.com$
+      - \.pageserve\.co$
+      - \.instapg\.com$
+    http_patterns:
+      - { pattern: "Looks Like You're Lost", weight: 55 }
+      - { pattern: "The page you were looking for doesn't exist", weight: 55 }
+
+  - provider: moosend
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.moosend\.com$
+    http_patterns:
+      - { pattern: "The page you are looking for could not be found", weight: 55 }
+
+  - provider: joomla_cloud
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.joomlacloudsite\.com$
+    http_patterns:
+      - { pattern: "The domain you requested doesn't exist", weight: 65 }
+
+  - provider: netlify_deploy_preview
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.deploy-preview--.*\.netlify\.app$
+    http_patterns:
+      - { pattern: "Not Found - Request ID", weight: 65 }
+
+  - provider: spryker_cloud
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.cloud\.spryker\.com$
+    http_patterns:
+      - { pattern: "No such application", weight: 60 }
+
+  - provider: wix_studios
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.editor\.wix\.com$
+      - \.wixsite\.com$
+    http_patterns:
+      - { pattern: "Looks Like This Domain Isn't Connected To A Website Yet!", weight: 65 }
+      - { pattern: "Error ConnectYourDomain occurred", weight: 70 }
+
+  - provider: gitbook_v2
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.gitbook\.com$
+    http_patterns:
+      - { pattern: "This space is not published", weight: 70 }
+      - { pattern: "This book has been unpublished", weight: 70 }
+
+  - provider: mmm_page
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.mmm\.page$
+    http_patterns:
+      - { pattern: "This page doesn't exist", weight: 65 }
+      - { pattern: "Page not found", weight: 50 }
+
+  - provider: popsy
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.popsy\.co$
+    http_patterns:
+      - { pattern: "Page not found", weight: 55 }
+      - { pattern: "This site does not exist", weight: 65 }
+
+  - provider: payloadcms_cloud
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.payloadcms\.com$
+    http_patterns:
+      - { pattern: "Project not found", weight: 65 }
+
+  - provider: netlify_functions_v2
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.edge\.netlify\.app$
+    http_patterns:
+      - { pattern: "Not Found - Request ID", weight: 65 }
+
+  - provider: aws_apprunner
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.awsapprunner\.com$
+    http_patterns:
+      - { pattern: "Service not found", weight: 60 }
+      - { pattern: "NoSuchService", weight: 65 }
+
+  - provider: supabase
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.supabase\.co$
+      - \.supabase\.in$
+    http_patterns:
+      - { pattern: "Project not found", weight: 60 }
+      - { pattern: "This project does not exist", weight: 65 }
+
+  - provider: astro_build
+    severity: Medium
+    claimable: true
+    cname_patterns:
+      - \.astro\.build$
+      - \.pages\.astro\.build$
+    http_patterns:
+      - { pattern: "This site does not exist", weight: 65 }
+      - { pattern: "Not found", weight: 45 }
